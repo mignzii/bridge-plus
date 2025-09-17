@@ -415,6 +415,31 @@ const RestaurantPage = () => {
     recuperationFetch();
   }, [])
 
+  
+  const clearCartHandler = async () => {
+    if (!panier?.id) {
+      setMessage({ type: "error", text: "Aucun panier trouvé." });
+      return;
+    }
+    try {
+      await clearCart(panier.id);
+      setPanier({
+        ...panier,
+        total_items: 0,
+        sous_total: 0,
+        rabais: 0,
+        frais_livraison: 0,
+        total: 0,
+      });
+      setPanierItems([]);
+      setQuantities({});
+      setMessage({ type: "success", text: "Panier vidé avec succès !" });
+    } catch (err: any) {
+      console.error("Erreur lors du vidage du panier :", err?.message || err);
+      setMessage({ type: "error", text: "Erreur lors du vidage du panier." });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -515,7 +540,7 @@ const RestaurantPage = () => {
                           <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
                             voir mon panier
                           </button>
-                          <button className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
+                          <button onClick={clearCartHandler} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
                             vider le panier
                           </button>
                         </div>
@@ -845,9 +870,9 @@ const RestaurantPage = () => {
             {/* Navigation Links */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-7 text-center sm:text-left">
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">À propos</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Commander</a>
+              <a onClick={()=>router.push("./commander")} className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Commander</a>
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Réservation</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Mafalia</a>
+              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Mafalia</a>
             </div>
             
             {/* Social Media Icons */}
