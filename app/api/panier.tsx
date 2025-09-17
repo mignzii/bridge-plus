@@ -85,7 +85,7 @@ export async function getCartWithItems(panierId: string) {
 
 export const clearCart = async (panierId: string) => {
   const { error } = await supabase
-    .from("panier_id")
+    .from("panier")
     .delete()
     .eq("panier_id", panierId); 
 
