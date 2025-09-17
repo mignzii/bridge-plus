@@ -230,7 +230,7 @@ const RestaurantPage = () => {
               panier_id: panier.id,
               produit_id: produit.id,
               produit_nom: produit.nom_produit,
-              prix_unitaire:  parseFloat(produit.prix),
+              prix_unitaire: produit.prix,
               quantite,
               image: produit.image,
               categorie_id: produit.categorie_id,
@@ -256,10 +256,11 @@ const RestaurantPage = () => {
         const nouveauPanier = await createPanier({
         sous_total: totalProduit,
         rabais: localRabais,
-        code_promo: null,
-        frais_livraison: 2000,
+        total: totalProduit + 2000 - localRabais,
+        code_promo: "",
+        quantite: quantite,
         total_items: quantite,
-        total: totalProduit + 2000 - localRabais
+        frais_livraison: 2000
       });
 
   
