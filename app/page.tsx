@@ -358,7 +358,7 @@ const BridgePlusApp = () => {
                   
                   {/* Bouton WhatsApp */}
                   <div
-                    onClick={() => window.open("https://wa.me/221779127058", "_blank")}
+                    onClick={() => window.open("https://wa.me/221789127058", "_blank")}
                     className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 
                                w-12 h-12 sm:w-14 sm:h-14 bg-green-500 
                                rounded-full flex items-center justify-center 
