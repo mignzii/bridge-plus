@@ -6,11 +6,13 @@ import livreur from '@/assets/livreur.png'
 import pizza from '@/assets/pizza.png';
 import poulet from '@/assets/poulet.png';
 import sandwich from '@/assets/sandwich.png';
+import Reduction from '@/assets/reduction.png';
 import { Search, ShoppingCart, User, Star, MapPin, Clock, ChevronLeft, ChevronRight, Phone, MapPinIcon, TimerIcon, Menu, X, UserCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getRestaurants } from './api/restaurants';
 import { getProduits } from './api/produits';
 import { clearCart, getCartWithItems, getPanier } from './api/panier';
+import { createfileAttente } from './api/fileAttente';
 
 type Restaurant = {
   id:string;
@@ -18,6 +20,30 @@ type Restaurant = {
   image: string;
   statut: string;
 }
+
+type ModalProps = {
+  show: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+};
+
+ const Modal = ({ show, onClose, children }: ModalProps) => {
+    if (!show) return null;
+  
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto relative">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 text-gray-500 hover:text-red-600 z-10"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          {children}
+        </div>
+      </div>
+    );
+  };
 
 type Produit = {
   id: string;
@@ -37,13 +63,69 @@ const BridgePlusApp = () => {
   const router = useRouter();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [produits, setProduits] = useState<Produit[]>([]);
+  const [formData, setFormData] = useState({
+    nom_complet: "",
+    email: "",
+    numeroPhone: "",
+    isCondition: false
+  })
   const [showPanier, setShowPanier] = useState(false);
   const [panier , setPanier] = useState<any>(null);
+  const [showReductionModal, setShowReductionModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [PanierItems, setPanierItems] = useState([])
   const panierRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+
+ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value, type, checked } = e.target;
+  setFormData(prev => ({
+    ...prev,
+    [name]: type === 'checkbox' ? checked : value
+  }));
+};
+
+const handleCreatePerson = async () => {
+  if (!formData.nom_complet || !formData.email || !formData.numeroPhone || !formData.isCondition) {
+    setMessage({ text: 'Veuillez remplir tous les champs et accepter les conditions.', type: 'error' });
+    return;
+  }
+  setLoading(true);
+  setMessage({ text: '', type: '' }); 
+  
+  try {
+    const infoData = {
+      nom_complet: formData.nom_complet,
+      email: formData.email,
+      numeroPhone: formData.numeroPhone,
+      isCondition: formData.isCondition
+    };
+    
+    const newPerson = await createfileAttente(infoData);
+    console.log('personne ajoutée:', newPerson);
+    
+    setMessage({ 
+      text: '🎉 Félicitations ! Vous avez été inscrit(e) à la file d\'attente. Vous recevrez bientôt votre code promo de 20% !', 
+      type: 'success' 
+    });
+    
+    setTimeout(() => {
+      setShowReductionModal(false);
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Erreur:', error);
+    setMessage({ 
+      text: 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.', 
+      type: 'error' 
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
  const clearCartHandler = async () => {
    if (!panier?.id) {
@@ -154,6 +236,16 @@ const BridgePlusApp = () => {
       window.removeEventListener("cartUpdated", handleCartUpdate);
     };
     }, [])
+
+
+  useEffect(()=>{
+    const timer = setTimeout(()=>{
+      setShowReductionModal(true);
+    }, 3000);
+    return ()=>clearTimeout(timer);
+  }, [])
+
+ 
   
 
   useEffect(()=>{
@@ -273,7 +365,7 @@ const BridgePlusApp = () => {
                                 <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
                                   voir mon panier
                                 </button>
-                                <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
+                                <button onClick={clearCartHandler} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
                                   vider le panier
                                 </button>
                               </div>
@@ -630,6 +722,109 @@ const BridgePlusApp = () => {
         </div>
       </section>
 
+      
+
+      <Modal show={showReductionModal} onClose={() => setShowReductionModal(false)}>
+        <div className="flex flex-col lg:flex-row">
+          {/* Image */}
+          <div className="w-full lg:w-1/2 bg-gray-100 relative">
+            <Image 
+              src={Reduction}
+              alt="Femme heureuse avec sac Bridget"
+              className="w-full h-64 sm:h-80 lg:h-full object-cover rounded-l-2xl lg:rounded-r-none lg:rounded-l-2xl"
+            />
+          </div>
+
+          {/* Formulaire */}
+          <div className="w-full lg:w-1/2 p-6 sm:p-8 flex flex-col justify-center">
+            <div className="max-w-md mx-auto lg:mx-0 w-full">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 leading-tight">
+                Profitez de 20% de réduction en rejoignant dès maintenant notre file d'attente !
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prénom et Nom
+                  </label>
+                  <input 
+                    name="nom_complet"
+                    type="text" 
+                    value={formData.nom_complet}
+                    onChange={handleInputChange}
+                    placeholder="Miniane Diouf"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input 
+                    type="email" 
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Loisbecket@gmail.com"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Numéro de téléphone
+                  </label>
+                  <input 
+                    type="tel" 
+                    name="numeroPhone"
+                    value={formData.numeroPhone}
+                    onChange={handleInputChange}
+                    placeholder="+221 77 636 78 89"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-4 mt-6">
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      name="isCondition"
+                      checked={formData.isCondition}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-red-500 border-2 border-gray-300 rounded focus:ring-red-500 mt-0.5"
+                    />
+                    <span className="text-sm text-gray-700 leading-relaxed">
+                      J'accepte de recevoir des communications de Mafalia et de bénéficier de mon code promo.
+                    </span>
+                  </label>
+                </div>
+
+                <button 
+                onClick={handleCreatePerson}
+                disabled={loading}
+                className="w-full bg-black text-white py-4 rounded-full text-sm font-semibold hover:bg-gray-800 transition-colors mt-6 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Inscription en cours...' : 'Rejoindre la file d\'attente'}
+              </button>
+              </div>
+              
+              {/* Message de confirmation/erreur */}
+              {message.text && (
+                <div className={`mt-4 p-3 rounded-lg text-sm ${
+                  message.type === 'success' 
+                    ? 'bg-green-50 text-green-800 border border-green-200' 
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
+    
+
       {/* Footer */}
       <footer className="bg-red-50 py-6 sm:py-8 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -689,6 +884,9 @@ const BridgePlusApp = () => {
           </div>
         </div>
       </footer>
+      
+      {/* Product Modal */}
+      
     </div>
   );
 };
