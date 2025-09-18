@@ -4,8 +4,9 @@ import { Search, ShoppingCart, User, Star, MapPin, Clock, ChevronLeft, ChevronRi
 import { useRouter } from 'next/navigation';
 import { getRestaurants } from '../api/restaurants';
 import { getProduits } from '../api/produits';
-import { deleteCartItem, getCartWithItems, getPanier } from '../api/panier';
+import { clearCart, deleteCartItem, getCartWithItems, getPanier, updateCartItemQuantity, updateCartTotals } from '../api/panier';
 import { getCategories } from '../api/categories';
+import { supabase } from '@/lib/supabaseClient';
 type Restaurant = {
   id:string;
   nom_restaurant: string;
@@ -64,71 +65,115 @@ const BridgePlusApp = () => {
      const panierRef = useRef<HTMLDivElement>(null);
     
    
-    const incrementQuantity = (productId: string) => {
-      setQuantities(prev => ({ ...prev, [productId]: (prev[productId] || 1) + 1 }));
-    };
-    const decrementQuantity = (productId: string) => {
-      setQuantities(prev => {
-        const current = prev[productId] || 1;
-        const next = Math.max(0, current - 1); 
-
-        if (next === 0){
-          setPanierItems((items) => items.filter((item) => item.id !== productId));
-          setPanier((prevPanier: Panier) => {
-        if (!prevPanier) return null;
-
-        const newItems = PanierItems.filter((item) => item.id !== productId);
-        const sous_total = newItems.reduce(
-          (acc, item) => acc + item.prix_unitaire * item.quantite,
-          0
-        );
-
-        return {
-          ...prevPanier,
-          sous_total,
-          total_items: newItems.length,
-          total: sous_total + prevPanier.frais_livraison - prevPanier.rabais,
-        };
-      });
-        }
-
-
-        return { ...prev, [productId]: next };
-      });
-    };
-  const removeItem = async (productId: string) => {
-    await deleteCartItem(productId);
-    setPanierItems((items) => items.filter((item) => item.id !== productId));
-    setQuantities((prev) => {
-        const copy = { ...prev };
-        delete copy[productId];
-        return copy;
-      });
-
-  setPanier((prevPanier: Panier) => {
-    if (!prevPanier) return null;
-
-    const newItems = PanierItems.filter((item) => item.id !== productId);
-    const sous_total = newItems.reduce(
-      (acc, item) => acc + item.prix_unitaire * item.quantite,
-      0
+  const incrementQuantity = async (itemId: string, currentQuantity: number, prixUnitaire: number) => {
+  try {
+    const newQuantity = currentQuantity + 1;
+    setPanierItems((items) =>
+      items.map((item) =>
+        item.id === itemId ? { ...item, quantite: newQuantity } : item
+      )
     );
+    setPanier((prev: Panier | null) => {
+      if (!prev) return prev;
+      const newTotalItems = prev.total_items + 1;
+      const newSousTotal = prev.sous_total + prixUnitaire;
+      const newTotal = newSousTotal + prev.frais_livraison - prev.rabais;
+      return {
+        ...prev,
+        total_items: newTotalItems,
+        sous_total: newSousTotal,
+        total: newTotal,
+      };
+    });
+    await updateCartItemQuantity(itemId, newQuantity, prixUnitaire);
+    await updateCartTotals(panier.id);
+  } catch (err) {
+    console.error("Erreur lors de l'incrémentation :", err);
+    setPanierItems((items) =>
+      items.map((item) =>
+        item.id === itemId ? { ...item, quantite: currentQuantity } : item
+      )
+    );
+  }
+};
+const decrementQuantity = async (itemId: string, currentQuantity: number, prixUnitaire: number) => {
+  const newQuantity = currentQuantity - 1;
 
-    return {
-      ...prevPanier,
-      sous_total,
-      total_items: newItems.length,
-      total: sous_total + prevPanier.frais_livraison - prevPanier.rabais,
-    };
-  });
+  if (newQuantity <= 0) {
+    await deleteCartItem(itemId);
+    setPanierItems((items) => items.filter((item) => item.id !== itemId));
+    const cartWithItem = await getCartWithItems(panier.id);
+    setPanier(cartWithItem || null);
+    setPanierItems(cartWithItem?.panier_item || []);
+  } else {
+    try {
+      const { error } = await supabase
+        .from("panier_item")
+        .update({ quantite: newQuantity })
+        .eq("id", itemId);
 
-  setQuantities((prev) => {
-    const copy = { ...prev };
-    delete copy[productId];
-    return copy;
-  });
+      if (error) throw error;
+
+      const newPanier = await updateCartTotals(panier.id);
+      setPanierItems((items) =>
+        items.map((item) =>
+          item.id === itemId ? { ...item, quantite: newQuantity } : item
+        )
+      );
+      setPanier(newPanier);
+    } catch (err) {
+      console.error("Erreur lors de la décrémentation :", err);
+    }
+  }
 };
 
+
+  const removeItem = async (productId: string, panierId: string) => {
+  try {
+    await deleteCartItem(productId);
+    setPanierItems((items) => items.filter((item) => item.id !== productId));
+
+    const newPanier = await updateCartTotals(panierId);
+    setPanier(newPanier);
+
+    setQuantities((prev) => {
+      const copy = { ...prev };
+      delete copy[productId];
+      return copy;
+    });
+  } catch (err: any) {
+    console.error("Erreur lors de la suppression :", err?.message || err);
+    setMessage({
+      type: "error",
+      text: "Erreur lors de la suppression de l'article.",
+    });
+  }
+};
+
+
+const clearCartHandler = async () => {
+  if (!panier?.id) {
+    setMessage({ type: "error", text: "Aucun panier trouvé." });
+    return;
+  }
+  try {
+    await clearCart(panier.id);
+    setPanier({
+      ...panier,
+      total_items: 0,
+      sous_total: 0,
+      rabais: 0,
+      frais_livraison: 0,
+      total: 0,
+    });
+    setPanierItems([]);
+    setQuantities({});
+    setMessage({ type: "success", text: "Panier vidé avec succès !" });
+  } catch (err: any) {
+    console.error("Erreur lors du vidage du panier :", err?.message || err);
+    setMessage({ type: "error", text: "Erreur lors du vidage du panier." });
+  }
+};
     
   const [produits, setProduits] = useState<Produit[]>([]);
   const getRestaurantName = (id: string) => {
@@ -238,6 +283,7 @@ const BridgePlusApp = () => {
     };
     }, [])
 
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -331,9 +377,12 @@ const BridgePlusApp = () => {
                           
                           {/* Actions */}
                           <div className="flex gap-2 mt-4 pt-3 border-t">
-                            <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2  rounded-2xl hover:bg-red-600 transition-colors">
-                              voir mon panier
-                            </button>
+                             <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
+                            voir mon panier
+                          </button>
+                          <button onClick={clearCartHandler} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
+                            vider le panier
+                          </button>
                           </div>
                         </div>
                       )}
@@ -398,14 +447,14 @@ const BridgePlusApp = () => {
         <div className="flex items-center gap-2 sm:gap-4">
           <button className="px-3 sm:px-5 py-1 rounded-full space-x-2 bg-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors">
             <Minus
-              onClick={() => decrementQuantity(item.id)}
+              onClick={() => decrementQuantity(item.id, item.quantite, item.prix_unitaire)}
               className="w-4 h-4"
             />
             <span className="text-base sm:text-lg font-semibold min-w-[2rem] text-center">
-              {quantities[item.id] ?? 1}
+              {item.quantite}
             </span>
             <Plus
-              onClick={() => incrementQuantity(item.id)}
+              onClick={() => incrementQuantity(item.id, item.quantite, item.prix_unitaire)}
               className="w-4 h-4"
             />
           </button>
@@ -413,7 +462,7 @@ const BridgePlusApp = () => {
 
         {/* Trash */}
         <button className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 transition-colors">
-          <Trash2 onClick={()=>removeItem(item.id)} size={16} className="text-red-500" />
+          <Trash2 onClick={()=>removeItem(item.id, panier.id)} size={16} className="text-red-500" />
         </button>
       </div>
     </div>
@@ -425,7 +474,6 @@ const BridgePlusApp = () => {
         {/* Order Summary Section */}
         <div className="bg-white rounded-2xl p-6 shadow-sm h-fit border border-gray-200 ">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Somme Commande</h2>
-          
           {
             panier &&(
                 <>
@@ -594,9 +642,9 @@ const BridgePlusApp = () => {
             {/* Navigation Links */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-7 text-center sm:text-left">
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">À propos</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Commander</a>
+              <a onClick={()=>router.push("./commander")} className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Commander</a>
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Réservation</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Mafalia</a>
+              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Mafalia</a>
             </div>
             
             {/* Social Media Icons */}

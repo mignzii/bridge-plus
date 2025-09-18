@@ -483,9 +483,9 @@ const BridgePlusApp = () => {
             {/* Navigation Links */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-7 text-center sm:text-left">
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">À propos</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Commander</a>
+              <a onClick={()=>router.push("./commander")} className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Commander</a>
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Réservation</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Mafalia</a>
+               <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Mafalia</a>
             </div>
             
             {/* Social Media Icons */}

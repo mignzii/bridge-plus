@@ -84,26 +84,42 @@ export async function getCartWithItems(panierId: string) {
 }
 
 export const clearCart = async (panierId: string) => {
-  const { error } = await supabase
-    .from("panier")
-    .delete()
-    .eq("panier_id", panierId); 
+  try {
+    const { error: deleteError } = await supabase
+      .from("panier_item")
+      .delete()
+      .eq("panier_id", panierId);
 
-  if (error) throw error;
+    if (deleteError) {
+      console.error("Erreur lors de la suppression des items du panier:", deleteError);
+      throw deleteError;
+    }
 
-   const { error: updateError } = await supabase
-    .from("panier")
-    .update({
-      total_items: 0,
-      total: 0
-    })
-    .eq("id", panierId);
-    
-  if (updateError) {
-    console.error("Erreur lors de la mise à jour du panier:", updateError);
-    throw updateError;
+    const { data, error: updateError } = await supabase
+      .from("panier")
+      .update({
+        total_items: 0,
+        sous_total: 0,
+        rabais: 0,
+        frais_livraison: 0,
+        total: 0,
+      })
+      .eq("id", panierId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("Erreur lors de la mise à jour du panier:", updateError);
+      throw updateError;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Erreur dans clearCart:", error);
+    throw error;
   }
 };
+
 
 
 export async function updateCartItemQuantity(itemId: string, newQuantity: number, prixUnitaire: number) {
@@ -141,13 +157,19 @@ export async function updateCartTotals(panierId: string) {
   if (itemsError) throw itemsError;
 
   const totalItems = items.reduce((sum, item) => sum + item.quantite, 0);
-  const total= items.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0);
+  const sousTotal = items.reduce((sum, item) => sum + item.quantite * item.prix_unitaire, 0);
+  const rabais = 0.2 * sousTotal; 
+  const fraisLivraison = 2000; 
+  const total = sousTotal + fraisLivraison - rabais;
 
   const { data, error } = await supabase
-    .from('cart_fournisseur')
+    .from('panier') 
     .update({
       total_items: totalItems,
-      total: total
+      sous_total: sousTotal,
+      rabais,
+      frais_livraison: fraisLivraison,
+      total,
     })
     .eq('id', panierId)
     .select()

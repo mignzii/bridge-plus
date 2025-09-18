@@ -10,7 +10,7 @@ import { Search, ShoppingCart, User, Star, MapPin, Clock, ChevronLeft, ChevronRi
 import { useRouter } from 'next/navigation';
 import { getRestaurants } from './api/restaurants';
 import { getProduits } from './api/produits';
-import { getCartWithItems, getPanier } from './api/panier';
+import { clearCart, getCartWithItems, getPanier } from './api/panier';
 
 type Restaurant = {
   id:string;
@@ -39,10 +39,36 @@ const BridgePlusApp = () => {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [showPanier, setShowPanier] = useState(false);
   const [panier , setPanier] = useState<any>(null);
-   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [PanierItems, setPanierItems] = useState([])
   const panierRef = useRef<HTMLDivElement>(null);
-  
+  const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+ const clearCartHandler = async () => {
+   if (!panier?.id) {
+     setMessage({ type: "error", text: "Aucun panier trouvé." });
+     return;
+   }
+   try {
+     await clearCart(panier.id);
+     setPanier({
+       ...panier,
+       total_items: 0,
+       sous_total: 0,
+       rabais: 0,
+       frais_livraison: 0,
+       total: 0,
+     });
+     setPanierItems([]);
+     setQuantities({});
+     setMessage({ type: "success", text: "Panier vidé avec succès !" });
+   } catch (err: any) {
+     console.error("Erreur lors du vidage du panier :", err?.message || err);
+     setMessage({ type: "error", text: "Erreur lors du vidage du panier." });
+   }
+ };
+ 
   const getRestaurantName = (id: string) => {
     const restaurant = restaurants.find(r => r.id === id);
     return restaurant ? restaurant.nom_restaurant : "Restaurant inconnu";
@@ -288,7 +314,7 @@ const BridgePlusApp = () => {
                       </div>
                       {/* Mobile Navigation Links */}
                       <div className="flex flex-col space-y-2">
-                        <button className="text-left text-gray-700 hover:text-red-600 font-medium py-2 text-sm">Commander</button>
+                        <button onClick={()=>router.push("./commander")} className="text-left text-gray-700 hover:text-red-600 font-medium py-2 text-sm">Commander</button>
                         <button className="text-left text-gray-700 hover:text-red-600 font-medium py-2 text-sm">Profile</button>
                       </div>
                     </div>
@@ -313,7 +339,7 @@ const BridgePlusApp = () => {
               <p className="text-gray-600 mb-6 max-w-md text-sm sm:text-base">
                 Découvrez une expérience culinaire unique avec Bridge+. Des plats délicieux livrés rapidement et en toute sécurité directement chez vous.
               </p>
-              <button className="bg-black text-white py-2 px-4 sm:px-6 rounded-3xl hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
+              <button onClick={()=>router.push("./commander")} className="bg-black text-white py-2 px-4 sm:px-6 rounded-3xl hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
                 Commander maintenant
               </button>
             </div>
@@ -513,7 +539,7 @@ const BridgePlusApp = () => {
           </div>
           
           <div className="text-center">
-            <button className="border border-black px-8 sm:px-12 py-2 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
+            <button onClick={()=>router.push("./commander")} className="border border-black px-8 sm:px-12 py-2 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
               Voir Tout
             </button>
           </div>
@@ -531,7 +557,7 @@ const BridgePlusApp = () => {
                   20% sur la livraison de votre<br/>
                   prochaine commande !
                 </h2>
-                <button className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 font-medium text-sm sm:text-base">
+                <button onClick={()=>router.push("./commander")} className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 font-medium text-sm sm:text-base">
                   Commander maintenant
                 </button>
               </div>
@@ -617,9 +643,9 @@ const BridgePlusApp = () => {
             {/* Navigation Links */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-7 text-center sm:text-left">
               <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">À propos</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Commander</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Réservation</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Mafalia</a>
+              <a onClick={()=>router.push("./commander")} className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Commander</a>
+              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Réservation</a>
+              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Mafalia</a>
             </div>
             
             {/* Social Media Icons */}
