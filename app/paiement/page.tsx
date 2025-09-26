@@ -2,70 +2,34 @@
 import React, { useEffect, useState } from 'react';
 import { Search, ShoppingCart, User, Star, MapPin, Clock, ChevronLeft, ChevronRight, Phone, MapPinIcon, TimerIcon, Minus, Plus, Trash2, Tag, CreditCard, ArrowRight, UserCircle2, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getRestaurants } from '../api/restaurants';
-import { getProduits } from '../api/produits';
-import { getCartWithItems, getPanier } from '../api/panier';
-import { getCategories } from '../api/categories';
+import { useCart } from '@/lib/hooks/useCart';
+import { orderService, CreateTransactionRequest } from '@/lib/services/orderService';
 import Image from 'next/image';
 import orange from '@/assets/orange.png';
 import wave from '@/assets/wave.jpg';
 import yas from '@/assets/yas.png';
-type Restaurant = {
-  id:string;
-  nom_restaurant: string;
-  image: string;
-  statut: string;
-}
-
-type Panier = {
-id: string;
-sous_total: number;
-rabais: number;
-total: number;
-code_promo: string;
-total_items: number;
-frais_livraison: number;
-}
-
-type PanierItem = {
-  id: string;
-  produit_id: string;
-  produit_nom: string;
-  quantite: number;
-  prix_unitaire: number;
-  image: string;
-  accompagnant: string;
-  categorie_id: string;
-}
-
-type Produit = {
-  id: string;
-  nom_produit: string;
-  image: string;
-  description: string;
-  prix: number;
-  accompagnants: string[];
-  note: number;
-  restaurant_id: string;
-  categorie_id: string;
-}
-
-type Categorie = {
-    id:string;
-    nom_categorie: string;
-}
 
 const BridgePlusApp = () => {
   const router = useRouter();
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-    const [panier , setPanier] = useState<Panier | any>(null);
-    const [showPanier, setShowPanier] = useState(false);
-    const [PanierItems, setPanierItems] = useState<PanierItem[]>([]);
+  const { items, summary, clearCart } = useCart();
     const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
-    const [quantities, setQuantities] = useState<Record<string, number>>({});
-    const [categories, setCategories] = useState<Categorie[]>([]);
     const [selectedPayment, setSelectedPayment] = useState('wave');
     const [showDropdown, setShowDropdown] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    nom_client: '',
+    telephone_client: '',
+    adresse_livraison: '',
+    instructions_livraison: '',
+    code_promo: '',
+    notes_commande: ''
+  });
+
+  const [modeRecuperation, setModeRecuperation] = useState<'livraison' | 'retrait'>('livraison');
+  const fraisLivraison = modeRecuperation === 'livraison' ? 2000 : 0;
+  const totalAvecLivraison = summary.total + fraisLivraison;
+
     const SenegalFlag = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" viewBox="0 0 60 40">
     <rect width="20" height="40" x="0" y="0" fill="#00853F"/>   {/* Vert */}
@@ -75,108 +39,165 @@ const BridgePlusApp = () => {
   </svg>
 );
 
-   
-    const incrementQuantity = (productId: string) => {
-      setQuantities(prev => ({ ...prev, [productId]: (prev[productId] || 1) + 1 }));
-    };
-    const decrementQuantity = (productId: string) => {
-      setQuantities(prev => {
-        const current = prev[productId] || 1;
-        const next = Math.max(0, current - 1); 
-        return { ...prev, [productId]: next };
-      });
-    };
-    
-  const [produits, setProduits] = useState<Produit[]>([]);
-  const getRestaurantName = (id: string) => {
-  const restaurant = restaurants.find(r => r.id === id);
-  return restaurant ? restaurant.nom_restaurant : "Restaurant inconnu";
+  useEffect(() => {
+    if (items.length === 0) {
+      router.push('/commander');
+    }
+  }, [items.length, router]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
-  const getCategorieNom = (id: string) => {
-  const cat = categories.find(c => c.id === id);
-  return cat ? cat.nom_categorie : "Catégorie inconnue";
-};
-  const getRestaurantStatut = (id:string) =>{
-    const restaurant = restaurants.find(r => r.id === id);
-    return restaurant ? restaurant.statut : "inconnu"
-  }
-  const getRestaurantImage = (id:string) =>{
-    const restaurant = restaurants.find(r => r.id === id);
-    return restaurant ? restaurant.image : "inconnu"
-  }
-  
 
-  const fetchRestaurant = async () =>{
-    try{
-      const data = await getRestaurants();
-      setRestaurants(data || [])
-    }catch(error:any){
-      console.error("Erreur lors des chargements des restaurants : ", error)
+  const validateForm = () => {
+    if (!formData.nom_client.trim()) {
+      setMessage({ type: "error", text: "Le nom et prénom sont requis" });
+      return false;
     }
-  }
-
-  const fetchProduits = async () =>{
-    try{
-      const data = await getProduits();
-      setProduits(data || [])
-    }catch(error:any){
-      console.error("Erreur lors des chargements des restaurants : ", error)
+    if (!formData.telephone_client.trim()) {
+      setMessage({ type: "error", text: "Le numéro de téléphone est requis" });
+      return false;
     }
-  }
+    if (modeRecuperation === 'livraison' && !formData.adresse_livraison.trim()) {
+      setMessage({ type: "error", text: "L'adresse de livraison est requise pour la livraison" });
+      return false;
+    }
+    // Validation du numéro de téléphone sénégalais (optionnel)
+    const phoneRegex = /^[67]\d{8}$/;
+    if (formData.telephone_client && !phoneRegex.test(formData.telephone_client.replace(/\s/g, ''))) {
+      setMessage({ type: "error", text: "Format de téléphone invalide (ex: 762430964)" });
+      return false;
+    }
+    return true;
+  };
 
-  const fetchCategories = async () => {
-  try {
-    const data = await getCategories(); 
-    setCategories(data || []);
-  } catch (error) {
-    console.error("Erreur lors du chargement des catégories :", error);
-  }
-};
+  const handlePayment = async () => {
+    if (!validateForm()) return;
 
-  useEffect(()=>{
-    const recuperationFetch = async()=>{
-      try{
-        await Promise.all([
-          fetchRestaurant(),
-          fetchProduits(),
-          fetchCategories()
-        ]);
-      }catch(error:any){
-        console.log("Erreur lors de l'initialisation")
-      }
-    };
-    recuperationFetch();
-  }, [])
+    setIsProcessing(true);
+    setMessage({ type: "", text: "" });
 
-  useEffect (()=>{
-      const fetchCart = async () =>{
-        try{
-          const carts = await getPanier();
-          if(carts.length === 0){
-            setPanier(null);
-            setPanierItems([]);
-            return;
-          }
-           const panierId = carts[0].id; 
-          const cartWithItem = await getCartWithItems(panierId);
-          setPanier(cartWithItem || null);
-          setPanierItems(cartWithItem.panier_item || [])
-        }catch (error) {
-        console.error("Erreur lors de la récupération du panier :", error);
-        setPanier(null);
-        setPanierItems([]);
-      }
+    try {
+      // 1. Créer la commande avec le premier restaurant des items
+      const firstItem = items[0];
+      const orderData = {
+        nom_client: formData.nom_client,
+        telephone_client: formData.telephone_client,
+        adresse_livraison: formData.adresse_livraison,
+        instructions_livraison: formData.instructions_livraison || undefined,
+        code_promo: formData.code_promo || undefined,
+        notes_commande: formData.notes_commande || undefined,
+        restaurant_id: firstItem.restaurant_id,
+        items: items.map(item => ({
+          produit_id: item.produit_id,
+          produit_nom: item.produit_nom,
+          quantite: item.quantite,
+          prix_unitaire: item.prix_unitaire,
+          image: item.image,
+          accompagnants: JSON.stringify(item.accompagnants || [])
+        }))
       };
-      fetchCart();
-      const handleCartUpdate = () => {
-      fetchCart();
-    };
-    window.addEventListener("cartUpdated", handleCartUpdate);
-  
-    return () =>{
-      window.removeEventListener("cartUpdated", handleCartUpdate);
-    };
-    }, [])
+
+      // Appel direct à l'API
+      const response = await fetch('/api/commandes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      const orderResult = await response.json();
+      
+      if (!orderResult.success) {
+        setMessage({ type: "error", text: orderResult.message || "Erreur lors de la création de la commande" });
+        return;
+      }
+
+      // 2. Créer la transaction
+      const transactionData: CreateTransactionRequest = {
+        commande_id: orderResult.data.commande_id,
+        montant: totalAvecLivraison,
+        methode_paiement: selectedPayment === 'wave' ? 'mobile_money' : 
+                          selectedPayment === 'orange' ? 'mobile_money' : 
+                          selectedPayment === 'yas' ? 'mobile_money' : 'mobile_money',
+        operateur: selectedPayment === 'wave' ? 'Wave' : 
+                  selectedPayment === 'orange' ? 'Orange Money' : 
+                  selectedPayment === 'yas' ? 'Yas Money' : 'Wave',
+        ip_client: '127.0.0.1',
+        user_agent: navigator.userAgent,
+        metadata: {
+          payment_method: selectedPayment,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      const transactionResult = await orderService.createTransaction(transactionData);
+      
+      if (!transactionResult.success) {
+        setMessage({ type: "error", text: transactionResult.message || "Erreur lors de la création de la transaction" });
+        return;
+      }
+
+      // 3. Simuler le processus de paiement
+      setMessage({ type: "success", text: "Commande créée avec succès ! Traitement du paiement en cours..." });
+      
+      // Simuler une confirmation de paiement après 3 secondes
+      setTimeout(async () => {
+        const confirmResult = await orderService.updateTransactionStatus(
+          transactionResult.data?.transaction_id || '',
+          'reussie',
+          `PAY_${Date.now()}`,
+          { confirmed_at: new Date().toISOString() }
+        );
+
+        if (confirmResult.success) {
+          setMessage({ type: "success", text: "Paiement confirmé ! Votre commande est en cours de préparation." });
+          
+          // Vider le panier
+          clearCart();
+          
+          // Rediriger vers une page de confirmation après 2 secondes
+          setTimeout(() => {
+            router.push(`/commande-confirmee?commande=${orderResult.data.commande_id}`);
+          }, 2000);
+        } else {
+          setMessage({ type: "error", text: "Erreur lors de la confirmation du paiement" });
+        }
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Erreur lors du paiement:', error);
+      setMessage({ 
+        type: "error", 
+        text: "Une erreur est survenue lors du traitement de votre commande" 
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Panier vide</h2>
+          <p className="text-gray-600 mb-6">Votre panier est vide. Ajoutez des produits pour continuer.</p>
+          <button
+            onClick={() => router.push('/commander')}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Continuer mes achats
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -189,7 +210,10 @@ const BridgePlusApp = () => {
             </div>
             {/* Navigation */}
                         <nav className="hidden md:flex space-x-8">
-                          <button className="text-gray-700 hover:text-red-600 font-medium">
+              <button 
+                onClick={() => router.push('/commander')}
+                className="text-gray-700 hover:text-red-600 font-medium"
+              >
                             Commander
                           </button>
                         </nav>
@@ -205,84 +229,22 @@ const BridgePlusApp = () => {
                             />
                           </div>
                         </div>
+            
            <div className="flex items-center space-x-4">
               {/* Container relatif pour le panier avec badge */}
               <div className="relative">
-                <div onClick={()=>setShowPanier(!showPanier)} className="text-gray-600 hover:text-red-600 cursor-pointer">
+                <div 
+                  onClick={() => router.push('/panier')}
+                  className="text-gray-600 hover:text-red-600 cursor-pointer"
+                >
                   <ShoppingCart className="w-6 h-6" />
                   {/* Badge du compteur repositionné */}
-                  {PanierItems.length > 0 && (
+                  {items.length > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-                      {PanierItems.length}
+                      {items.length}
                     </span>
                   )}
                 </div>
-
-                {/* Dropdown du panier */}
-                {showPanier && (
-                  <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg w-96 max-h-96 overflow-y-auto z-50">
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                        Votre Panier
-                      </h3>
-                      
-                      {PanierItems.length === 0 ? (
-                        <div className="text-center py-8">
-                          <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-500">Votre panier est vide</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div>
-                            <p>Total des articles : {PanierItems.length}</p>
-                          </div>
-                          {PanierItems.map((item) => (
-                            <div 
-                              key={item.id} 
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                            >
-                              <div className="flex items-center gap-3 flex-1">
-                                <img src={item.image} className="w-10 h-10 rounded-md object-cover" alt="" />
-                                <div>
-                                  <h4 className="font-medium text-gray-800 truncate">
-                                    {item.produit_nom}
-                                  </h4>
-                                  <p className="text-sm text-gray-600">
-                                    Quantité: {item.quantite}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right ml-3">
-                                <span className="font-semibold text-gray-800">
-                                  {item.prix_unitaire}FCFA
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Total */}
-                          {panier && (
-                            <div className="border-t pt-3 mt-4">
-                              <div className="flex justify-between items-center">
-                                <span className="font-semibold text-gray-800">Total:</span>
-                                <span className="font-bold text-lg text-gray-800">
-                                  {panier.sous_total}FCFA
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Actions */}
-                          <div className="flex gap-2 mt-4 pt-3 border-t">
-                            <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2  rounded-2xl hover:bg-red-600 transition-colors">
-                              voir mon panier
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <button className="text-gray-600 hover:text-red-600">
@@ -301,7 +263,7 @@ const BridgePlusApp = () => {
           <h1 className="text-3xl font-bold text-gray-900">Paiement</h1>
           <div className="flex items-center text-gray-600 mt-2">
             <span>Panier</span>
-            <ChevronDown className="w-4 h-4 mx-2" />
+                <ChevronRight className="w-4 h-4 mx-2" />
             <span>Paiement</span>
           </div>
         </div>
@@ -334,29 +296,132 @@ const BridgePlusApp = () => {
               </label>
               <input
                 type="text"
+                    name="nom_client"
+                    value={formData.nom_client}
+                    onChange={handleInputChange}
                 placeholder="Entrez votre nom et prénom"
-                className="w-full bg-gray-100 border border-gray-300 rounded-full px-4 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-full px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Numéro de téléphone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Numéro de téléphone
+                    Numéro de téléphone *
               </label>
               <div className="flex">
                 <div className="flex items-center bg-gray-100 border border-gray-300 rounded-l-full px-3 py-3">
-                  <div className="w-6 h-4 mr-2 mx-2 mb-4"><SenegalFlag/></div>
+                      <div className="w-6 h-4 mr-2 mx-2"><SenegalFlag/></div>
                   <span className="text-gray-600 text-sm mx-2">+221</span>
                 </div>
                 <input
                   type="tel"
+                      name="telephone_client"
+                      value={formData.telephone_client}
+                      onChange={handleInputChange}
+                      placeholder="77 123 45 67"
                   className="flex-1 bg-gray-100 border border-gray-300 border-l-0 rounded-r-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
-            <div className='border-b border-gray-200 mb-2' ></div>
+                {/* Mode de récupération */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mode de récupération *
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                      modeRecuperation === 'livraison' 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-300 bg-white hover:bg-gray-50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="mode_recuperation"
+                        value="livraison"
+                        checked={modeRecuperation === 'livraison'}
+                        onChange={(e) => setModeRecuperation(e.target.value as 'livraison' | 'retrait')}
+                        className="sr-only"
+                      />
+                      <div className="text-center w-full">
+                        <div className="text-2xl mb-1">🚚</div>
+                        <div className="font-medium">Livraison</div>
+                        <div className="text-xs text-gray-600">2000 FCFA</div>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                      modeRecuperation === 'retrait' 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-300 bg-white hover:bg-gray-50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="mode_recuperation"
+                        value="retrait"
+                        checked={modeRecuperation === 'retrait'}
+                        onChange={(e) => setModeRecuperation(e.target.value as 'livraison' | 'retrait')}
+                        className="sr-only"
+                      />
+                      <div className="text-center w-full">
+                        <div className="text-2xl mb-1">🏪</div>
+                        <div className="font-medium">Retrait</div>
+                        <div className="text-xs text-gray-600">Gratuit</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Adresse de livraison - Conditionnelle */}
+                {modeRecuperation === 'livraison' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Adresse de livraison *
+                    </label>
+                    <textarea
+                      name="adresse_livraison"
+                      value={formData.adresse_livraison}
+                      onChange={handleInputChange}
+                      placeholder="Entrez votre adresse complète (quartier, rue, point de repère...)"
+                      rows={3}
+                      className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
+                )}
+
+                {/* Adresse de retrait - Informatif */}
+                {modeRecuperation === 'retrait' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-medium text-green-800 mb-2">🏪 Point de retrait</h4>
+                    <p className="text-sm text-green-700">
+                      <strong>Bridge+ Dakar Central</strong><br/>
+                      Rue 15, Plateau, Dakar<br/>
+                      Ouvert : Lun-Sam 8h-20h, Dim 9h-18h<br/>
+                      Tél : +221 33 123 45 67
+                    </p>
+                    <p className="text-xs text-green-600 mt-2">
+                      💡 Votre commande sera prête sous 30 minutes
+                    </p>
+                  </div>
+                )}
+
+                {/* Instructions de livraison */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Instructions de livraison (optionnel)
+                  </label>
+                  <textarea
+                    name="instructions_livraison"
+                    value={formData.instructions_livraison}
+                    onChange={handleInputChange}
+                    placeholder="Instructions spéciales pour le livreur..."
+                    rows={2}
+                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+
+                <div className='border-b border-gray-200 mb-2'></div>
 
             {/* Choisir un moyen de paiement */}
             <div>
@@ -420,10 +485,34 @@ const BridgePlusApp = () => {
               </div>
             </div>
 
+                {/* Message */}
+                {message.text && (
+                  <div className={`p-4 rounded-lg ${
+                    message.type === 'success' 
+                      ? 'bg-green-50 text-green-800 border border-green-200' 
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}>
+                    {message.text}
+                  </div>
+                )}
+
             {/* Payer Button */}
-            <button className="w-full bg-black text-white py-4 rounded-full font-medium flex items-center justify-center hover:bg-gray-800 transition-colors">
-              <span>Payer</span>
+                <button 
+                  onClick={handlePayment}
+                  disabled={isProcessing}
+                  className="w-full bg-black text-white py-4 rounded-full font-medium flex items-center justify-center hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                      <span>Traitement en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Payer {totalAvecLivraison} FCFA</span>
               <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  )}
             </button>
           </div>
 
@@ -433,42 +522,39 @@ const BridgePlusApp = () => {
               Somme Commande
             </h2>
 
-            {
-            panier &&(
-                <>
                 <div className="space-y-4 mb-6">
             <div className="flex justify-between">
-              <span>Sous total</span>
-              <span className="font-medium">FCFA {panier.sous_total}</span>
+              <span>Sous-total</span>
+                    <span className="font-medium">FCFA {summary.sous_total}</span>
             </div>
             
             <div className="flex justify-between">
               <span>Rabais (-20%)</span>
-              <span className="font-medium  text-red-600">-{panier.rabais}</span>
+                    <span className="font-medium text-red-600">-{summary.rabais} FCFA</span>
             </div>
             
             <div className="flex justify-between">
-              <span>Frais de Livraison</span>
-              <span className="font-medium">FCFA {panier.frais_livraison}</span>
+              <span className="flex items-center gap-1">
+                {modeRecuperation === 'livraison' ? '🚚' : '🏪'}
+                {modeRecuperation === 'livraison' ? 'Livraison' : 'Retrait gratuit'}
+              </span>
+              <span className="font-medium">
+                {fraisLivraison > 0 ? `FCFA ${fraisLivraison}` : 'Gratuit'}
+              </span>
             </div>
             
             <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-between text-lg font-bold text-gray-900">
                 <span>Total</span>
-                <span>FCFA {panier.total}</span>
+                      <span>FCFA {totalAvecLivraison}</span>
               </div>
             </div>
           </div>
-                </>
-            )
-          }
           </div>
         </div>
       </div>
     </div>
       </section>
-
-      
 
   {/* Footer */}
           <footer className="bg-red-50 py-6 sm:py-8 lg:py-16">

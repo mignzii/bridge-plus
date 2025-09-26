@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intégration Mafalia - Commandes Bridge+</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #eb061d, #c70516);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .config {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section h3 {
+            color: #eb061d;
+            margin-top: 0;
+        }
+        button {
+            background: #eb061d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #c70516;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border-left: 4px solid #eb061d;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+        .status-info { background-color: #17a2b8; }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Test Intégration Mafalia - Commandes Bridge+</h1>
+        <p>Interface de test pour l'intégration des commandes</p>
+    </div>
+
+    <div class="config">
+        <h3>⚙️ Configuration</h3>
+        <div>
+            <label>URL de base:</label>
+            <input type="text" id="baseUrl" value="https://b.mafalia.com/api" style="width: 300px;">
+        </div>
+        <div>
+            <label>Token API:</label>
+            <input type="text" id="apiToken" value="mafalia-api-token-2025" style="width: 300px;">
+        </div>
+        <button onclick="updateConfig()">Mettre à jour la configuration</button>
+    </div>
+
+    <div class="grid">
+        <div class="test-section">
+            <h3>📋 Tests de Base</h3>
+            <button onclick="testGetCommandes()">Récupérer les commandes</button>
+            <button onclick="testGetCommandeById()">Récupérer une commande</button>
+            <button onclick="testGetStatistics()">Récupérer les statistiques</button>
+            <button onclick="testErrorHandling()">Tester la gestion d'erreurs</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Tests de Mise à Jour</h3>
+            <div>
+                <label>ID de commande:</label>
+                <input type="text" id="commandeId" placeholder="ID de la commande" style="width: 200px;">
+            </div>
+            <div>
+                <label>Nouveau statut:</label>
+                <select id="nouveauStatut">
+                    <option value="traite">Traité</option>
+                    <option value="remis_livreur">Remis au livreur</option>
+                    <option value="en_livraison">En cours de livraison</option>
+                    <option value="livree">Livré</option>
+                    <option value="annulee">Annulé</option>
+                </select>
+            </div>
+            <div>
+                <label>Raison:</label>
+                <input type="text" id="raison" placeholder="Raison du changement" style="width: 200px;">
+            </div>
+            <button onclick="testUpdateStatus()">Mettre à jour le statut</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>🚀 Tests Complets</h3>
+        <button onclick="runAllTests()">Lancer tous les tests</button>
+        <button onclick="testCompleteFlow()">Tester le flux complet</button>
+        <button onclick="clearLog()">Effacer les logs</button>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Logs de Test</h3>
+        <div id="log" class="log">Prêt pour les tests...\n</div>
+    </div>
+
+    <script>
+        // Configuration
+        let config = {
+            baseUrl: 'https://b.mafalia.com/api',
+            token: 'mafalia-api-token-2025'
+        };
+
+        // Fonction de log
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = `status-${type}`;
+            const statusIndicator = `<span class="status-indicator ${statusClass}"></span>`;
+            
+            logElement.innerHTML += `${statusIndicator}[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Fonction pour faire des requêtes
+        async function makeRequest(method, endpoint, data = null) {
+            const url = `${config.baseUrl}${endpoint}`;
+            const options = {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${config.token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            try {
+                log(`🔗 ${method} ${endpoint}`, 'info');
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Succès (${response.status}): ${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    log(`❌ Erreur (${response.status}): ${JSON.stringify(result, null, 2)}`, 'error');
+                }
+                
+                return { success: response.ok, data: result, status: response.status };
+            } catch (error) {
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Tests
+        async function testGetCommandes() {
+            log('🧪 TEST: Récupération des commandes', 'info');
+            await makeRequest('GET', '/commandes?limit=5');
+        }
+
+        async function testGetCommandeById() {
+            log('🧪 TEST: Récupération d\'une commande spécifique', 'info');
+            const result = await makeRequest('GET', '/commandes?limit=1');
+            
+            if (result.success && result.data.data.commandes.length > 0) {
+                const commandeId = result.data.data.commandes[0].id;
+                document.getElementById('commandeId').value = commandeId;
+                await makeRequest('GET', `/commandes/${commandeId}`);
+            } else {
+                log('❌ Aucune commande trouvée pour le test', 'error');
+            }
+        }
+
+        async function testUpdateStatus() {
+            const commandeId = document.getElementById('commandeId').value;
+            const nouveauStatut = document.getElementById('nouveauStatut').value;
+            const raison = document.getElementById('raison').value || 'Test de mise à jour';
+            
+            if (!commandeId) {
+                log('❌ Veuillez entrer un ID de commande', 'error');
+                return;
+            }
+            
+            log(`🧪 TEST: Mise à jour du statut vers "${nouveauStatut}"`, 'info');
+            await makeRequest('PUT', `/commandes/${commandeId}`, {
+                statut: nouveauStatut,
+                raison: raison,
+                modifie_par: 'mafalia_test_system',
+                type_modificateur: 'mafalia',
+                metadata: {
+                    test: true,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
+
+        async function testGetStatistics() {
+            log('🧪 TEST: Récupération des statistiques', 'info');
+            await makeRequest('GET', '/commandes/statistiques?type=overview');
+        }
+
+        async function testErrorHandling() {
+            log('🧪 TEST: Gestion des erreurs', 'info');
+            
+            // Test avec ID inexistant
+            await makeRequest('GET', '/commandes/commande-inexistante-123');
+            
+            // Test avec token invalide
+            const originalToken = config.token;
+            config.token = 'token-invalide';
+            await makeRequest('GET', '/commandes?limit=1');
+            config.token = originalToken;
+        }
+
+        async function runAllTests() {
+            log('🚀 DÉBUT DES TESTS COMPLETS', 'info');
+            log('=' .repeat(50), 'info');
+            
+            await testGetCommandes();
+            await testGetCommandeById();
+            await testGetStatistics();
+            await testErrorHandling();
+            
+            log('✅ TOUS LES TESTS TERMINÉS', 'success');
+        }
+
+        async function testCompleteFlow() {
+            log('🔄 TEST DE FLUX COMPLET', 'info');
+            log('=' .repeat(30), 'info');
+            
+            try {
+                // 1. Récupérer une commande en attente
+                log('1️⃣ Récupération des commandes en attente...', 'info');
+                const result = await makeRequest('GET', '/commandes?statut=en_attente&limit=1');
+                
+                if (!result.success || !result.data.data.commandes.length) {
+                    log('❌ Aucune commande en attente trouvée', 'error');
+                    return;
+                }
+                
+                const commande = result.data.data.commandes[0];
+                log(`✅ Commande trouvée: ${commande.numero_commande} (${commande.nom_client})`, 'success');
+                
+                // 2. Traiter la commande
+                log('2️⃣ Traitement de la commande...', 'info');
+                await makeRequest('PUT', `/commandes/${commande.id}`, {
+                    statut: 'traite',
+                    raison: 'Commande traitée par Mafalia',
+                    modifie_par: 'mafalia_operator_001',
+                    type_modificateur: 'mafalia'
+                });
+                
+                // 3. Remettre au livreur
+                log('3️⃣ Remise au livreur...', 'info');
+                await makeRequest('PUT', `/commandes/${commande.id}`, {
+                    statut: 'remis_livreur',
+                    raison: 'Commande remise au livreur',
+                    modifie_par: 'mafalia_operator_001',
+                    type_modificateur: 'mafalia',
+                    metadata: {
+                        livreur_id: 'livreur_456',
+                        livreur_nom: 'Amadou Diallo',
+                        livreur_telephone: '771234567'
+                    }
+                });
+                
+                // 4. En cours de livraison
+                log('4️⃣ Début de livraison...', 'info');
+                await makeRequest('PUT', `/commandes/${commande.id}`, {
+                    statut: 'en_livraison',
+                    raison: 'Livreur en route vers le client',
+                    modifie_par: 'livreur_456',
+                    type_modificateur: 'livreur',
+                    metadata: {
+                        position_livreur: {
+                            latitude: 14.7167,
+                            longitude: -17.4677
+                        },
+                        temps_estime: '15 minutes'
+                    }
+                });
+                
+                // 5. Livraison terminée
+                log('5️⃣ Livraison terminée...', 'info');
+                await makeRequest('PUT', `/commandes/${commande.id}`, {
+                    statut: 'livree',
+                    raison: 'Commande livrée avec succès',
+                    modifie_par: 'livreur_456',
+                    type_modificateur: 'livreur',
+                    metadata: {
+                        heure_livraison: new Date().toISOString(),
+                        signature_client: 'signature_base64_encoded',
+                        photo_livraison: 'https://storage.example.com/delivery_photo.jpg'
+                    }
+                });
+                
+                log('✅ FLUX COMPLET TERMINÉ AVEC SUCCÈS!', 'success');
+                
+            } catch (error) {
+                log(`❌ ERREUR DANS LE FLUX COMPLET: ${error.message}`, 'error');
+            }
+        }
+
+        function updateConfig() {
+            config.baseUrl = document.getElementById('baseUrl').value;
+            config.token = document.getElementById('apiToken').value;
+            log(`⚙️ Configuration mise à jour: ${config.baseUrl}`, 'info');
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = 'Logs effacés...\n';
+        }
+
+        // Initialisation
+        log('🌐 Interface de test chargée', 'info');
+        log('📋 Prêt pour les tests d\'intégration Mafalia', 'info');
+    </script>
+</body>
+</html>

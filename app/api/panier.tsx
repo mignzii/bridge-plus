@@ -14,7 +14,6 @@ sous_total: number;
 rabais: number;
 total: number;
 code_promo: string;
-quantite: number;
 total_items: number;
 frais_livraison: number;
 }) {
@@ -25,7 +24,6 @@ frais_livraison: number;
     rabais: produitData.rabais,
     total: produitData.total,
     code_promo: produitData.code_promo,
-    quantite: produitData.quantite,
     total_items: produitData.total_items,
     frais_livraison: produitData.frais_livraison
     })

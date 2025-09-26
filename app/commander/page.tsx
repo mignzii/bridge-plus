@@ -4,35 +4,16 @@ import { Search, ShoppingCart, Settings, Star, ChevronRight, UserCircle2, Minus,
 import { getCategories } from '../api/categories';
 import { getProduits } from '../api/produits';
 import { getRestaurants } from '../api/restaurants';
-import { clearCart, createPanier, getCartWithItems, getPanier, updatePanier } from '../api/panier';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { useCart } from '@/lib/hooks/useCart';
+import { CartSidebar } from '@/components/CartSidebar';
+import { CartIcon } from '@/components/CartIcon';
 
 type Categorie = {
   id:string;
   nom_categorie: string;
 }
 
-type Panier = {
-id: string;
-sous_total: number;
-rabais: number;
-total: number;
-code_promo: string;
-total_items: number;
-frais_livraison: number;
-}
-
-type PanierItem = {
-  id: string;
-  produit_id: string;
-  produit_nom: string;
-  quantite: number;
-  prix_unitaire: number;
-  image: string;
-  accompagnant: string;
-  categorie_id: string;
-}
 
 type Restaurant = {
   id:string;
@@ -125,8 +106,6 @@ const RestaurantPage = () => {
   const [showPanier, setShowPanier] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
-  const [panier , setPanier] = useState<any>(null);
-  const [PanierItems, setPanierItems] = useState([])
   const [produits, setProduits] = useState<Produit[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Produit | null>(null);
@@ -135,13 +114,34 @@ const RestaurantPage = () => {
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [selectedAccompagnants, setSelectedAccompagnants] = useState<Record<string, string[]>>({});
+  
+  // Utiliser le hook cart
+  const { addToCart, items, clearCart, summary } = useCart();
+
+  // Fonction utilitaire pour parser les accompagnants
+  const parseAccompagnants = (accompagnants: any): string[] => {
+    let result: string[] = [];
+    try {
+      if (Array.isArray(accompagnants)) {
+        result = accompagnants;
+      } else if (typeof accompagnants === 'string') {
+        // Essayer de parser la chaîne JSON
+        result = JSON.parse(accompagnants);
+        // Si c'est encore une chaîne, essayer de parser à nouveau
+        if (typeof result === 'string') {
+          result = JSON.parse(result);
+        }
+      }
+    } catch (error) {
+      console.warn('Erreur lors du parsing des accompagnants:', error);
+      result = [];
+    }
+    return result;
+  };
   const panierRef = useRef<HTMLDivElement>(null);
 
   const produitsFiltres = selectedCategory ? produits.filter((p)=>p.categorie_id === selectedCategory):produits;
     
-  const notifyCartUpdate = () => {
-    window.dispatchEvent(new Event('cartUpdated'));
-  };
 
   const incrementQuantity = (productId: string) => {
     setQuantities(prev => ({ ...prev, [productId]: (prev[productId] || 1) + 1 }));
@@ -174,129 +174,36 @@ const RestaurantPage = () => {
     });
   };
 
-  const ajouterAuPanier = async (produit: Produit) => {
+  const ajouterAuPanier = (produit: Produit) => {
     const quantite = quantities[produit.id] || 1;
     const accompagnantsSelectionnes = selectedAccompagnants[produit.id] || [];
-    
-    console.log("🔍 Debug - Produit complet:", produit);
     
     if (quantite <= 0) {
       setMessage({ type: "error", text: "Veuillez sélectionner une quantité" });
       return;
     }
-  
-    console.log("✅ Données validées:", {
-      produitId: produit.id,
-      produitNom: produit.nom_produit,
-      quantite,
-      prix: produit.prix,
-      accompagnants: accompagnantsSelectionnes
-    });
-  
-    const totalProduit = produit.prix * quantite;
-    const localRabais = totalProduit * 0.2;
+
     try {
-  
-      if (panier) {
-        console.log("✅ Panier existant:", panier.id);
-        let { data: itemExistant, error: itemError } = await supabase
-          .from('panier_item')
-          .select('*')
-          .eq('panier_id', panier.id)
-          .eq('produit_id', produit.id)
-          .single();
-  
-        if (itemError && itemError.code !== 'PGRST116') {
-          throw itemError;
-        }
-  
-        if (itemExistant) {
-          console.log("🔄 Mise à jour item existant...");
-          const { error: updateError } = await supabase
-            .from('panier_item')
-            .update({
-              quantite: itemExistant.quantite + quantite,
-              accompagnant: JSON.stringify(accompagnantsSelectionnes)
-            })
-            .eq('id', itemExistant.id);
-            
-          if (updateError) throw updateError;
-          
-        } else {
-          console.log("➕ Ajout nouvel item...");
-          const { error: insertError } = await supabase
-            .from('panier_item')
-            .insert([{
-              panier_id: panier.id,
-              produit_id: produit.id,
-              produit_nom: produit.nom_produit,
-              prix_unitaire: produit.prix,
-              quantite,
-              image: produit.image,
-              categorie_id: produit.categorie_id,
-              accompagnant: JSON.stringify(accompagnantsSelectionnes)
-            }]);
-            
-          if (insertError) throw insertError;
-        }
-         const nouveauSousTotal = (panier.sous_total || 0) + totalProduit;
-          const nouveauTotalItems = (panier.total_items || 0) + quantite;
-          const nouveauRabais = nouveauSousTotal * 0.2; 
-          const nouveauTotal = nouveauSousTotal - nouveauRabais + (panier.frais_livraison || 0);
+      // Ajouter l'item au store local
+      addToCart({
+        produit_id: produit.id,
+        produit_nom: produit.nom_produit,
+        prix_unitaire: produit.prix,
+        image: produit.image,
+        categorie_id: produit.categorie_id,
+        restaurant_id: produit.restaurant_id,
+        accompagnants: accompagnantsSelectionnes
+      }, quantite);
 
-      await updatePanier(panier.id, {
-        sous_total: nouveauSousTotal,
-        total_items: nouveauTotalItems,
-        rabais: nouveauRabais,
-        total: nouveauTotal
-      });
-  
-      } else {
-        console.log("🆕 Création nouveau panier...");
-        const nouveauPanier = await createPanier({
-        sous_total: totalProduit,
-        rabais: localRabais,
-        total: totalProduit + 2000 - localRabais,
-        code_promo: "",
-        quantite: quantite,
-        total_items: quantite,
-        frais_livraison: 2000
-      });
-
-  
-        console.log("✅ Nouveau panier créé:", nouveauPanier.id);
-  
-        const { error: itemError } = await supabase
-          .from('panier_item')
-          .insert([{
-          panier_id: nouveauPanier.id,
-          produit_id: produit.id,
-          produit_nom: produit.nom_produit,
-          prix_unitaire: produit.prix,
-          quantite,
-          image: produit.image,
-          categorie_id: produit.categorie_id,
-          accompagnant: JSON.stringify(accompagnantsSelectionnes)
-          }]);
-  
-        if (itemError) throw itemError;
-        const cartWithItems = await getCartWithItems(nouveauPanier.id);
-        setPanier(cartWithItems);
-        setPanierItems(cartWithItems?.panier_item ?? []);
-        console.log("✅ Item ajouté au nouveau panier");
-      }
-  
       setMessage({ type: "success", text: `${produit.nom_produit} ajouté au panier !` });
       setQuantities(prev => ({ ...prev, [produit.id]: 0 }));
       setSelectedAccompagnants(prev => ({ ...prev, [produit.id]: [] }));
       
       setShowModal(false);
       setSelectedProduct(null);
-      
-      notifyCartUpdate();
-  
+
     } catch (error: any) {
-      console.error("❌ Erreur complète:", error);
+      console.error("❌ Erreur lors de l'ajout au panier:", error);
       setMessage({ 
         type: "error", 
         text: "Erreur lors de l'ajout au panier: " + (error?.message || "Erreur inconnue") 
@@ -364,38 +271,6 @@ const RestaurantPage = () => {
   }, [showPanier]);
   
 
-  useEffect (()=>{
-    const fetchCart = async () =>{
-      try{
-        const carts = await getPanier();
-        if(carts.length === 0){
-          setPanier(null);
-          setPanierItems([]);
-          return;
-        }
-        
-         const panierId = carts[0].id; 
-        const cartWithItem = await getCartWithItems(panierId);
-        setPanier(cartWithItem || null);
-        setPanierItems(cartWithItem.panier_item || [])
-      }catch (error) {
-      console.error("Erreur lors de la récupération du panier :", error);
-      setPanier(null);
-      setPanierItems([]);
-    }
-    };
-    fetchCart();
-    const handleCartUpdate = () => {
-    fetchCart();
-    
-  };
-  window.addEventListener("cartUpdated", handleCartUpdate);
-
-  return () =>{
-    window.removeEventListener("cartUpdated", handleCartUpdate);
-  };
-  
-  }, [])
   
 
   useEffect(()=>{
@@ -417,22 +292,9 @@ const RestaurantPage = () => {
   }, [])
 
   
-  const clearCartHandler = async () => {
-    if (!panier?.id) {
-      setMessage({ type: "error", text: "Aucun panier trouvé." });
-      return;
-    }
+  const clearCartHandler = () => {
     try {
-      await clearCart(panier.id);
-      setPanier({
-        ...panier,
-        total_items: 0,
-        sous_total: 0,
-        rabais: 0,
-        frais_livraison: 0,
-        total: 0,
-      });
-      setPanierItems([]);
+      clearCart();
       setQuantities({});
       setMessage({ type: "success", text: "Panier vidé avec succès !" });
     } catch (err: any) {
@@ -475,82 +337,9 @@ const RestaurantPage = () => {
             {/* Right Icons */}
             <div className="flex items-center space-x-2 sm:space-x-4">
               {/* Cart Icon */}
-              <div className='relative' ref={panierRef}>
-                <div onClick={()=>setShowPanier(!showPanier)} className="text-gray-600 hover:text-red-600 cursor-pointer">
-                  <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
-                  {PanierItems.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-medium text-[10px] sm:text-xs">
-                      {PanierItems.length}
-                    </span>
-                  )}
-                </div>
-                
-                {showPanier && (
-                <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg w-80 sm:w-96 max-h-80 sm:max-h-96 overflow-y-auto z-50">
-                  <div className="p-3 sm:p-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                      Votre Panier
-                    </h3>
-                    
-                    {PanierItems.length === 0 ? (
-                      <div className="text-center py-6 sm:py-8">
-                        <ShoppingCart className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 text-sm">Votre panier est vide</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm">Total des articles : {PanierItems.length}</p>
-                        </div>
-                        {PanierItems.map((item: any) => (
-                          <div 
-                            key={item.id} 
-                            className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                          >
-                            <div className="flex items-center flex-1 min-w-0">
-                              <img src={item.image} className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover flex-shrink-0 mr-2 sm:mr-3" alt="" />
-                              <div className="min-w-0 flex-1">
-                                <h4 className="font-medium text-gray-800 truncate text-sm">
-                                  {item.produit_nom}
-                                </h4>
-                                <p className="text-xs text-gray-600">
-                                  Quantité: {item.quantite}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right ml-2 flex-shrink-0">
-                              <span className="font-semibold text-gray-800 text-sm">
-                                {item.prix_unitaire}FCFA
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {/* Total */}
-                        <div className="border-t pt-3 mt-4">
-                          <div className="flex justify-between items-center">
-                            <span className="font-semibold text-gray-800 text-sm">Total:</span>
-                            <span className="font-bold text-base sm:text-lg text-gray-800">
-                              {panier.sous_total}FCFA
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex gap-2 mt-4 pt-3 border-t">
-                          <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
-                            voir mon panier
-                          </button>
-                          <button onClick={clearCartHandler} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
-                            vider le panier
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              </div>
+              <CartIcon 
+                onClick={() => setShowPanier(!showPanier)} 
+              />
 
               {/* User Icon */}
               <button className="text-gray-600 hover:text-red-600 hidden sm:block">
@@ -590,6 +379,12 @@ const RestaurantPage = () => {
           )}
         </div>
       </header>
+
+      {/* Cart Sidebar */}
+      <CartSidebar 
+        isOpen={showPanier}
+        onClose={() => setShowPanier(false)}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
@@ -788,7 +583,7 @@ const RestaurantPage = () => {
                 <h3 className="font-medium text-gray-500 mt-4 sm:mt-6 text-sm sm:text-base">Choix Accompagnement</h3>
                 
                 <div className="flex gap-2 mt-3 sm:mt-4 flex-wrap">
-                  {selectedProduct.accompagnants.map((accompagnant, index) => {
+                  {parseAccompagnants(selectedProduct.accompagnants).map((accompagnant, index) => {
                     const isSelected = selectedAccompagnants[selectedProduct.id]?.includes(accompagnant);
                     return (
                       <button 

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // Commenté pour permettre les APIs dynamiques
+  // output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
   },
