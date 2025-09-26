@@ -741,6 +741,9 @@ const handleCreatePerson = async () => {
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 leading-tight">
                 Profitez de 20% de réduction en rejoignant dès maintenant notre file d'attente !
               </h2>
+              <div>
+              <span className='text-sm text-red-500'>* Si vous étes déja inscrit, merci de fermer le formulaire !</span>
+              </div>
               
               <div className="space-y-4">
                 <div>
@@ -823,7 +826,6 @@ const handleCreatePerson = async () => {
           </div>
         </div>
       </Modal>
-    
 
       {/* Footer */}
       <footer className="bg-red-50 py-6 sm:py-8 lg:py-16">
