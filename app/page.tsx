@@ -11,7 +11,7 @@ import { Search, ShoppingCart, User, Star, MapPin, Clock, ChevronLeft, ChevronRi
 import { useRouter } from 'next/navigation';
 import { getRestaurants } from './api/restaurants';
 import { getProduits } from './api/produits';
-import { clearCart, getCartWithItems, getPanier } from './api/panier';
+import { useCart } from '@/lib/hooks/useCart';
 import { createfileAttente } from './api/fileAttente';
 
 type Restaurant = {
@@ -70,14 +70,16 @@ const BridgePlusApp = () => {
     isCondition: false
   })
   const [showPanier, setShowPanier] = useState(false);
-  const [panier , setPanier] = useState<any>(null);
   const [showReductionModal, setShowReductionModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [PanierItems, setPanierItems] = useState([])
   const panierRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState<Produit[]>([]);
+  
+  // Utiliser le nouveau système de panier
+  const { items, summary, clearCart } = useCart();
 
 
  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,6 +114,8 @@ const handleCreatePerson = async () => {
       type: 'success' 
     });
     
+    // Marquer que l'utilisateur a vu le modal
+    localStorage.setItem('hasSeenReductionModal', 'true');
     setTimeout(() => {
       setShowReductionModal(false);
     }, 2000);
@@ -127,23 +131,9 @@ const handleCreatePerson = async () => {
   }
 };
 
- const clearCartHandler = async () => {
-   if (!panier?.id) {
-     setMessage({ type: "error", text: "Aucun panier trouvé." });
-     return;
-   }
+ const clearCartHandler = () => {
    try {
-     await clearCart(panier.id);
-     setPanier({
-       ...panier,
-       total_items: 0,
-       sous_total: 0,
-       rabais: 0,
-       frais_livraison: 0,
-       total: 0,
-     });
-     setPanierItems([]);
-     setQuantities({});
+     clearCart();
      setMessage({ type: "success", text: "Panier vidé avec succès !" });
    } catch (err: any) {
      console.error("Erreur lors du vidage du panier :", err?.message || err);
@@ -184,11 +174,26 @@ const handleCreatePerson = async () => {
   const fetchProduits = async () =>{
     try{
       const data = await getProduits();
-      setProduits(data || [])
+      setProduits(data || []);
+      setFilteredProducts(data || []);
     }catch(error:any){
       console.error("Erreur lors des chargements des restaurants : ", error)
     }
   }
+
+  // Fonction de recherche
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (term.trim() === "") {
+      setFilteredProducts(produits);
+    } else {
+      const filtered = produits.filter(product => 
+        product.nom_produit.toLowerCase().includes(term.toLowerCase()) ||
+        product.description.toLowerCase().includes(term.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    }
+  };
 
    useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -207,42 +212,18 @@ const handleCreatePerson = async () => {
     }, [showPanier]);
   
 
-  useEffect (()=>{
-      const fetchCart = async () =>{
-        try{
-          const carts = await getPanier();
-          if(carts.length === 0){
-            setPanier(null);
-            setPanierItems([]);
-            return;
-          }
-           const panierId = carts[0].id; 
-          const cartWithItem = await getCartWithItems(panierId);
-          setPanier(cartWithItem || null);
-          setPanierItems(cartWithItem.panier_item || [])
-        }catch (error) {
-        console.error("Erreur lors de la récupération du panier :", error);
-        setPanier(null);
-        setPanierItems([]);
-      }
-      };
-      fetchCart();
-      const handleCartUpdate = () => {
-      fetchCart();
-    };
-    window.addEventListener("cartUpdated", handleCartUpdate);
-  
-    return () =>{
-      window.removeEventListener("cartUpdated", handleCartUpdate);
-    };
-    }, [])
+  // Le panier est maintenant géré par le hook useCart
 
 
   useEffect(()=>{
-    const timer = setTimeout(()=>{
-      setShowReductionModal(true);
-    }, 3000);
-    return ()=>clearTimeout(timer);
+    // Vérifier si l'utilisateur a déjà vu le modal
+    const hasSeenModal = localStorage.getItem('hasSeenReductionModal');
+    if (!hasSeenModal) {
+      const timer = setTimeout(()=>{
+        setShowReductionModal(true);
+      }, 3000);
+      return ()=>clearTimeout(timer);
+    }
   }, [])
 
  
@@ -291,6 +272,8 @@ const handleCreatePerson = async () => {
                       <input
                         type="text"
                         placeholder="Rechercher un produit..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       />
                     </div>
@@ -302,9 +285,9 @@ const handleCreatePerson = async () => {
                     <div className='relative' ref={panierRef}>
                       <div onClick={()=>setShowPanier(!showPanier)} className="text-gray-600 hover:text-red-600 cursor-pointer">
                         <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
-                        {PanierItems.length > 0 && (
+                        {items.length > 0 && (
                           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-medium text-[10px] sm:text-xs">
-                            {PanierItems.length}
+                            {items.length}
                           </span>
                         )}
                       </div>
@@ -316,7 +299,7 @@ const handleCreatePerson = async () => {
                             Votre Panier
                           </h3>
                           
-                          {PanierItems.length === 0 ? (
+                          {items.length === 0 ? (
                             <div className="text-center py-6 sm:py-8">
                               <ShoppingCart className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" />
                               <p className="text-gray-500 text-sm">Votre panier est vide</p>
@@ -324,15 +307,22 @@ const handleCreatePerson = async () => {
                           ) : (
                             <div className="space-y-3">
                               <div>
-                                <p className="text-sm">Total des articles : {PanierItems.length}</p>
+                                <p className="text-sm">Total des articles : {items.length}</p>
                               </div>
-                              {PanierItems.map((item: any) => (
+                              {items.map((item: any) => (
                                 <div 
                                   key={item.id} 
                                   className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
                                 >
                                   <div className="flex items-center flex-1 min-w-0">
-                                    <img src={item.image} className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover flex-shrink-0 mr-2 sm:mr-3" alt="" />
+                                    <img 
+                                      src={item.image} 
+                                      className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover flex-shrink-0 mr-2 sm:mr-3" 
+                                      alt=""
+                                      onError={(e) => {
+                                        e.currentTarget.src = '/placeholder-product.png';
+                                      }}
+                                    />
                                     <div className="min-w-0 flex-1">
                                       <h4 className="font-medium text-gray-800 truncate text-sm">
                                         {item.produit_nom}
@@ -355,7 +345,7 @@ const handleCreatePerson = async () => {
                                 <div className="flex justify-between items-center">
                                   <span className="font-semibold text-gray-800 text-sm">Total:</span>
                                   <span className="font-bold text-base sm:text-lg text-gray-800">
-                                    {panier.sous_total}FCFA
+                                    {summary.sous_total}FCFA
                                   </span>
                                 </div>
                               </div>
@@ -401,6 +391,8 @@ const handleCreatePerson = async () => {
                         <input
                           type="text"
                           placeholder="Rechercher un produit..."
+                          value={searchTerm}
+                          onChange={(e) => handleSearch(e.target.value)}
                           className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
                         />
                       </div>
@@ -529,7 +521,14 @@ const handleCreatePerson = async () => {
               <div key={restaurant.id} className="bg-white w-full h-32 sm:h-40 lg:h-44 rounded-xl shadow-lg hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105">
                 <div className="p-3 sm:p-6 text-center h-full flex flex-col justify-center">
                   <div className="flex-1 flex items-center justify-center mb-2">
-                    <img src={restaurant.image} alt="image" className="max-w-full max-h-16 sm:max-h-20 object-contain" />
+                    <img 
+                      src={restaurant.image} 
+                      alt="image" 
+                      className="max-w-full max-h-16 sm:max-h-20 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-restaurant.png';
+                      }}
+                    />
                   </div>
                   <h3 className="font-bold text-gray-900 text-xs sm:text-sm lg:text-base">{restaurant.nom_restaurant}</h3>
                 </div>
@@ -546,11 +545,18 @@ const handleCreatePerson = async () => {
           
           {/* First 4 products */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            {produits.slice(0, 4).map((product) => (
+            {filteredProducts.slice(0, 4).map((product) => (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden transform hover:scale-105">
                 <div className="relative">
                   <div className="h-40 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
-                    <img src={product.image} alt={product.nom_produit} className='w-full h-full object-cover'/>
+                    <img 
+                      src={product.image} 
+                      alt={product.nom_produit} 
+                      className='w-full h-full object-cover'
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-product.png';
+                      }}
+                    />
                   </div>
                   {getRestaurantStatut(product.restaurant_id) === "ouvert" && (
                     <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
@@ -567,6 +573,9 @@ const handleCreatePerson = async () => {
                       src={getRestaurantImage(product.restaurant_id)} 
                       alt="image" 
                       className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-restaurant.png';
+                      }}
                     />
                     <span className="truncate max-w-20 sm:max-w-none">{getRestaurantName(product.restaurant_id)}</span>
                   </div>
@@ -589,11 +598,18 @@ const handleCreatePerson = async () => {
           
           {/* Second 4 products */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            {produits.slice(4, 8).map((product) => (
+            {filteredProducts.slice(4, 8).map((product) => (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden transform hover:scale-105">
                 <div className="relative">
                   <div className="h-40 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
-                    <img src={product.image} alt={product.nom_produit} className='w-full h-full object-cover'/>
+                    <img 
+                      src={product.image} 
+                      alt={product.nom_produit} 
+                      className='w-full h-full object-cover'
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-product.png';
+                      }}
+                    />
                   </div>
                   {getRestaurantStatut(product.restaurant_id) === "ouvert" && (
                     <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-green-500 text-white px-2 py-1 rounded-md text-xs font-medium">
@@ -610,6 +626,9 @@ const handleCreatePerson = async () => {
                       src={getRestaurantImage(product.restaurant_id)} 
                       alt="image" 
                       className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-restaurant.png';
+                      }}
                     />
                     <span className="truncate max-w-20 sm:max-w-none">{getRestaurantName(product.restaurant_id)}</span>
                   </div>
@@ -631,9 +650,24 @@ const handleCreatePerson = async () => {
           </div>
           
           <div className="text-center">
-            <button onClick={()=>router.push("./commander")} className="border border-black px-8 sm:px-12 py-2 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
-              Voir Tout
-            </button>
+            {searchTerm && filteredProducts.length === 0 ? (
+              <div className="py-8">
+                <p className="text-gray-500 mb-4">Aucun produit trouvé pour "{searchTerm}"</p>
+                <button 
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilteredProducts(produits);
+                  }} 
+                  className="border border-black px-8 sm:px-12 py-2 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
+                >
+                  Voir tous les produits
+                </button>
+              </div>
+            ) : (
+              <button onClick={()=>router.push("./commander")} className="border border-black px-8 sm:px-12 py-2 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
+                Voir Tout
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -724,7 +758,10 @@ const handleCreatePerson = async () => {
 
       
 
-      <Modal show={showReductionModal} onClose={() => setShowReductionModal(false)}>
+      <Modal show={showReductionModal} onClose={() => {
+        setShowReductionModal(false);
+        localStorage.setItem('hasSeenReductionModal', 'true');
+      }}>
         <div className="flex flex-col lg:flex-row">
           {/* Image */}
           <div className="w-full lg:w-1/2 bg-gray-100 relative">

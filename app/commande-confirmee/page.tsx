@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Clock, MapPin, Phone, Mail, ArrowLeft } from 'lucide-react';
 import { orderService } from '@/lib/services/orderService';
@@ -29,7 +29,7 @@ interface CommandeDetails {
   }>;
 }
 
-const CommandeConfirmeePage = () => {
+const CommandeConfirmeeContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [commande, setCommande] = useState<CommandeDetails | null>(null);
@@ -330,6 +330,21 @@ const CommandeConfirmeePage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const CommandeConfirmeePage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <CommandeConfirmeeContent />
+    </Suspense>
   );
 };
 
