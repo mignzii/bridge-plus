@@ -114,6 +114,7 @@ const RestaurantPage = () => {
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [selectedAccompagnants, setSelectedAccompagnants] = useState<Record<string, string[]>>({});
+  const [showAllCategory, setShowAllCategory] = useState(false);
   
   // Utiliser le hook cart
   const { addToCart, items, clearCart, summary } = useCart();
@@ -392,7 +393,7 @@ const RestaurantPage = () => {
           <div className="hidden lg:block w-64 bg-white rounded-2xl border border-gray-300 shadow-md p-6 h-fit">
             <h2 className="text-lg font-semibold border-b text-gray-900 mb-6">Catégories</h2>
             <div className="space-y-2">
-              {categorie.map((category, index) => (
+              {(showAllCategory? categorie : categorie.slice(0,10)).map((category, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedCategory(category.id)}
@@ -408,11 +409,15 @@ const RestaurantPage = () => {
               ))}
             </div>
             
-            <div className="mt-8 pt-2 border-t border-gray-200">
-              <button className="text-sm bg-gray-100 px-4 py-3 rounded-full font-medium">
-                Voir toutes les catégories
+           {
+            categorie.length > 10 &&(
+               <div className="mt-8 pt-2 border-t border-gray-200">
+              <button onClick={()=>setShowAllCategory(!showAllCategory)} className="text-sm bg-gray-100 px-4 py-3 rounded-full font-medium">
+                {showAllCategory ? "Voir moins les catégories" : "Voir toutes les catégories"}
               </button>
             </div>
+            )
+           }
           </div>
 
           {/* Mobile Categories Button */}

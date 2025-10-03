@@ -14,6 +14,16 @@ import { getProduits } from './api/produits';
 import { useCart } from '@/lib/hooks/useCart';
 import { createfileAttente } from './api/fileAttente';
 
+type Suggestion = {
+  id: string
+  place_name: string
+  center: [number, number]
+  text: string,
+  rue: string,
+  quartier: string,
+  ville: string
+}
+
 type Restaurant = {
   id:string;
   nom_restaurant: string;
@@ -77,7 +87,127 @@ const BridgePlusApp = () => {
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Produit[]>([]);
-  
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
+  const [locationError, setLocationError] = useState<string>('')
+  const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false)
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [isAddressInputFocused, setIsAddressInputFocused] = useState(false);
+ 
+
+  //pour la localisation
+  useEffect(() => {
+  const controller = new AbortController()
+
+  const fetchSuggestions = async () => {
+    if (query.length < 2) {
+      setSuggestions([])
+      return
+    }
+    
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ query });
+      if (userLocation?.lng && userLocation?.lat) {
+  params.append('proximity', `${userLocation.lng},${userLocation.lat}`);
+}
+      
+      const res = await fetch(`/api/geocode?${params.toString()}`, { 
+        signal: controller.signal 
+      })
+      
+      if (!res.ok) {
+        throw new Error('Erreur lors de la recherche')
+      }
+      
+      const data = await res.json()
+      setSuggestions(data.features || [])
+    } catch (err) {
+      if ((err as any).name !== 'AbortError') {
+        console.error('Erreur de géocodage:', err)
+        setSuggestions([])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const timer = setTimeout(fetchSuggestions, 300) 
+  return () => {
+    controller.abort()
+    clearTimeout(timer)
+  }
+}, [query, userLocation])
+
+const handleSelect = (s: Suggestion) => {
+  setQuery(s.place_name)
+  setSuggestions([])
+  setIsUsingCurrentLocation(false)
+  console.log('Adresse choisie:', s)
+}
+
+const handleUseCurrentLocation = () => {
+  if (userLocation) {
+    setIsUsingCurrentLocation(true);
+    setLoading(true);
+    fetch(`/api/geocode?reverse=${userLocation.lat},${userLocation.lng}`)
+
+      .then(res => res.json())
+      .then(data => {
+        if (data.features && data.features.length > 0) {
+          setQuery(data.features[0].place_name);
+          setSuggestions([]);
+        }
+      })
+      .catch(err => console.error('Erreur:', err))
+      .finally(() => setLoading(false));
+  }
+}
+
+ useEffect(() => {
+  if (!navigator.geolocation) {
+    setLocationError('La géolocalisation n\'est pas supportée');
+    return;
+  }
+
+  const options = {
+    enableHighAccuracy: true,
+    timeout: 15000, // Augmenté à 15 secondes
+    maximumAge: 30000 // Cache de 30 secondes
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      console.log('✅ Position:', position.coords);
+      setUserLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      });
+      setLocationError('');
+    },
+    (error) => {
+      console.error('❌ Erreur géolocalisation:', error);
+      let errorMsg = '';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg = 'Veuillez autoriser l\'accès à votre position dans les paramètres du navigateur';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg = 'Position GPS indisponible. Vérifiez vos paramètres de localisation';
+          break;
+        case error.TIMEOUT:
+          errorMsg = 'Délai d\'attente dépassé. Réessayez';
+          break;
+        default:
+          errorMsg = 'Erreur de géolocalisation';
+      }
+      setLocationError(errorMsg);
+    },
+    options
+  );
+}, []);
+
   // Utiliser le nouveau système de panier
   const { items, summary, clearCart } = useCart();
 
@@ -114,7 +244,6 @@ const handleCreatePerson = async () => {
       type: 'success' 
     });
     
-    // Marquer que l'utilisateur a vu le modal
     localStorage.setItem('hasSeenReductionModal', 'true');
     setTimeout(() => {
       setShowReductionModal(false);
@@ -468,39 +597,147 @@ const handleCreatePerson = async () => {
       </section>
 
       {/* Delivery Address Section */}
-      <section className="bg-white max-w-4xl mx-4 sm:mx-auto py-4 sm:py-5 shadow-md mt-5 rounded-2xl sm:rounded-full">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="w-full sm:w-auto">
-              <label className="text-sm font-medium block mb-1">Saisissez votre adresse de livraison</label>
-              <div className='flex items-center'>
-                <MapPinIcon size={18} className='text-red-500 mr-2 flex-shrink-0'/>
-                <input 
-                  type="text" 
-                  placeholder='Adresse, ville' 
-                  className='text-sm border-b-2 border-gray-100 flex-1 min-w-0' 
-                />
-              </div>
+      <section className="bg-white max-w-4xl mx-4 sm:mx-auto py-4 sm:py-5 shadow-md mt-5 rounded-2xl sm:rounded-full relative">
+  <div className="mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      
+      {/* Champ adresse cliquable */}
+      <div className="w-full sm:w-auto relative">
+        <label className="text-sm font-medium block mb-1">Saisissez votre adresse de livraison</label>
+        <div 
+          className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          onClick={() => setShowAddressModal(true)}
+        >
+          <MapPinIcon size={18} className="text-red-500 mr-2 flex-shrink-0" />
+          <span className="text-sm text-gray-700 flex-1 truncate">
+            {query || "Cliquez pour saisir votre adresse"}
+          </span>
+        </div>
+      </div>
+
+      {/* Choix livraison */}
+      <div className="w-full sm:w-auto">
+        <label className="text-sm font-medium block mb-1">Livraison</label>
+        <div className="flex items-center">
+          <TimerIcon size={18} className="text-red-500 mr-2 flex-shrink-0" />
+          <select className="border-b-2 border-gray-100 text-sm flex-1 sm:flex-none">
+            <option value="">Immédiate</option>
+            <option value="">En attente</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Bouton recherche */}
+      <div className="w-full sm:w-auto">
+        <button className="bg-[#eb061d] text-white px-6 sm:px-8 py-2 rounded-full hover:bg-red-500 transition-all duration-300 transform hover:scale-105 relative w-full sm:w-auto text-sm sm:text-base">
+          <Search className="inline mr-2" size={16} />
+          Rechercher
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* Modal de recherche d'adresse */}
+{showAddressModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900">Adresse Livraison</h3>
+        <button 
+          onClick={() => setShowAddressModal(false)}
+          className="text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Champ de recherche */}
+      <div className="p-4 sm:p-6 border-b">
+        <div className="relative">
+          <MapPinIcon size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+          <input
+            type="text"
+            placeholder="Fann résidence"
+            className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
+      </div>
+      <div className="overflow-y-auto max-h-96">
+        {loading && (
+          <div className="p-6 text-center text-gray-500">
+            Recherche en cours...
+          </div>
+        )}
+        
+        {!loading && query.length < 2 && (
+          <div className="p-6 text-center text-gray-500">
+            Saisissez au moins 2 caractères pour rechercher
+          </div>
+        )}
+
+        {!loading && query.length >= 2 && suggestions.length === 0 && (
+          <div className="p-6 text-center text-gray-500">
+            Aucun résultat trouvé
+          </div>
+        )}
+        {/*ça help au user de choisir sa position actuelle*/}
+        {userLocation && (
+          <div 
+            onClick={() => {
+              handleUseCurrentLocation();
+              setShowAddressModal(false);
+            }}
+            className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b transition-colors"
+          >
+            <div className="bg-red-50 p-2 rounded-full">
+              <MapPinIcon size={20} className="text-red-500" />
             </div>
-            <div className="w-full sm:w-auto">
-              <label className="text-sm font-medium block mb-1">Livraison</label>
-              <div className='flex items-center'>
-                <TimerIcon size={18} className='text-red-500 mr-2 flex-shrink-0'/>
-                <select className='border-b-2 border-gray-100 text-sm flex-1 sm:flex-none'>
-                  <option value="">Immediate</option>
-                  <option value="">En attente</option>
-                </select>
-              </div>
-            </div>
-            <div className="w-full sm:w-auto">
-              <button className="bg-[#eb061d] text-white px-6 sm:px-8 py-2 rounded-full hover:bg-red-500 transition-all duration-300 transform hover:scale-105 relative w-full sm:w-auto text-sm sm:text-base">
-                <Search className="inline mr-2" size={16}/>
-                Rechercher
-              </button>
+            <div className="flex-1">
+              <div className="font-medium text-gray-900">Utiliser ma position actuelle</div>
+              <div className="text-sm text-gray-500">Localisation GPS</div>
             </div>
           </div>
+        )}
+
+        {/* Liste des suggestions Mapbox */}
+        {suggestions.map((s) => (
+  <li
+    key={s.id}
+    onClick={() => handleSelect(s)}
+    className="cursor-pointer p-3 hover:bg-gray-100 border-b transition-colors"
+  >
+    <div className="flex items-start gap-3">
+      <MapPinIcon size={18} className="text-red-500 mt-1 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        {s.rue && (
+          <div className="font-semibold text-gray-900 truncate">
+            {s.rue}
+          </div>
+        )}
+        {s.quartier && (
+          <div className="text-sm text-gray-600">
+            {s.quartier}{s.ville ? `, ${s.ville}` : ''}
+          </div>
+        )}
+        {!s.rue && !s.quartier && (
+          <div className="font-medium text-gray-900">{s.text}</div>
+        )}
+        <div className="text-xs text-gray-400 truncate mt-0.5">
+          {s.place_name}
         </div>
-      </section>
+      </div>
+    </div>
+  </li>
+))}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Restaurants Section */}
       <section className="py-6 sm:py-8 lg:py-16">

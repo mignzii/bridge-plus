@@ -377,49 +377,40 @@ const BridgePlusApp = () => {
                 {modeRecuperation === 'livraison' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Adresse de livraison *
+                      Instruction de livraison *
                     </label>
                     <textarea
                       name="adresse_livraison"
                       value={formData.adresse_livraison}
                       onChange={handleInputChange}
-                      placeholder="Entrez votre adresse complète (quartier, rue, point de repère...)"
+                      placeholder="Ex : Quartier, appartement 3B, entrer par la porte côté rue, sonner à la porte principale, étage 2, près de l’ascenseur"
                       rows={3}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full text-sm bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     />
                   </div>
                 )}
 
                 {/* Adresse de retrait - Informatif */}
-                {modeRecuperation === 'retrait' && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-800 mb-2">🏪 Point de retrait</h4>
-                    <p className="text-sm text-green-700">
-                      <strong>Bridge+ Dakar Central</strong><br/>
-                      Rue 15, Plateau, Dakar<br/>
-                      Ouvert : Lun-Sam 8h-20h, Dim 9h-18h<br/>
-                      Tél : +221 33 123 45 67
-                    </p>
-                    <p className="text-xs text-green-600 mt-2">
-                      💡 Votre commande sera prête sous 30 minutes
-                    </p>
+               {modeRecuperation === 'retrait' && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
+                  <h4 className="font-medium text-green-800 mb-2 text-xs sm:text-sm lg:text-base">🏪 Point de retrait</h4>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Date de retrait</label>
+                    <input
+                      type="date"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
                   </div>
-                )}
-
-                {/* Instructions de livraison */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Instructions de livraison (optionnel)
-                  </label>
-                  <textarea
-                    name="instructions_livraison"
-                    value={formData.instructions_livraison}
-                    onChange={handleInputChange}
-                    placeholder="Instructions spéciales pour le livreur..."
-                    rows={2}
-                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Heure de retrait</label>
+                    <input
+                      type="time"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                  </div>
                 </div>
+              )}
+
 
                 <div className='border-b border-gray-200 mb-2'></div>
 
