@@ -23,7 +23,9 @@ const BridgePlusApp = () => {
     adresse_livraison: '',
     instructions_livraison: '',
     code_promo: '',
-    notes_commande: ''
+    notes_commande: '',
+    date_retrait: '',
+    heure_retrait: '',
   });
 
   const [modeRecuperation, setModeRecuperation] = useState<'livraison' | 'retrait'>('livraison');
@@ -84,11 +86,14 @@ const BridgePlusApp = () => {
     try {
       // 1. Créer la commande avec le premier restaurant des items
       const firstItem = items[0];
+      const heureWithSeconds = formData.heure_retrait ? `${formData.heure_retrait}:00` : undefined;
       const orderData = {
         nom_client: formData.nom_client,
         telephone_client: formData.telephone_client,
         adresse_livraison: formData.adresse_livraison,
         instructions_livraison: formData.instructions_livraison || undefined,
+        date_retrait: formData.date_retrait || undefined,
+        heure_retrait: heureWithSeconds,
         code_promo: formData.code_promo || undefined,
         notes_commande: formData.notes_commande || undefined,
         restaurant_id: firstItem.restaurant_id,
@@ -381,7 +386,7 @@ const BridgePlusApp = () => {
                     </label>
                     <textarea
                       name="adresse_livraison"
-                      value={formData.adresse_livraison}
+                      value={formData.instructions_livraison}
                       onChange={handleInputChange}
                       placeholder="Ex : Quartier, appartement 3B, entrer par la porte côté rue, sonner à la porte principale, étage 2, près de l’ascenseur"
                       rows={3}
@@ -397,13 +402,19 @@ const BridgePlusApp = () => {
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Date de retrait</label>
                     <input
+                    value={formData.date_retrait}
                       type="date"
+                      name='date_retrait'
+                      onChange={handleInputChange}
                       className="w-full bg-white border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                     />
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Heure de retrait</label>
                     <input
+                    value={formData.heure_retrait}
+                    onChange={handleInputChange}
+                    name='heure_retrait'
                       type="time"
                       className="w-full bg-white border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                     />

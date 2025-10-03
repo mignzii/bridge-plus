@@ -14,6 +14,8 @@ interface CommandeDetails {
   adresse_livraison: string;
   instructions_livraison?: string;
   statut: string;
+  date_retrait:string;
+  heure_retrait:string;
   sous_total: number;
   frais_livraison: number;
   rabais: number;
@@ -213,12 +215,13 @@ const CommandeConfirmeeContent = () => {
                   <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="font-medium">{commande.nom_client}</p>
-                    <p className="text-gray-600">{commande.adresse_livraison}</p>
                     {commande.instructions_livraison && (
                       <p className="text-sm text-gray-500 mt-1">
                         Instructions: {commande.instructions_livraison}
                       </p>
                     )}
+                    <p>{commande.date_retrait}</p>
+                    <p>{commande.heure_retrait}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

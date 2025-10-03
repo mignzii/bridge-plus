@@ -116,6 +116,8 @@ export async function POST(request: NextRequest) {
       telephone_client,
       adresse_livraison,
       instructions_livraison,
+      date_retrait,
+      heure_retrait,
       code_promo,
       notes_commande,
       items,
@@ -153,6 +155,8 @@ export async function POST(request: NextRequest) {
         sous_total,
         rabais,
         frais_livraison,
+        date_retrait,
+        heure_retrait,
         total,
         total_items
       })
