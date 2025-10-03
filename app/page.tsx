@@ -1,12 +1,14 @@
 "use client"
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Lottie from 'lottie-react';
 import imagePer from '@/assets/imagePer.png'
 import livreur from '@/assets/livreur.png'
 import pizza from '@/assets/pizza.png';
 import poulet from '@/assets/poulet.png';
 import sandwich from '@/assets/sandwich.png';
 import Reduction from '@/assets/reduction.png';
+import areaMapAnimation from '@/assets/Area Map.json';
 import { Search, ShoppingCart, User, Star, MapPin, Clock, ChevronLeft, ChevronRight, Phone, MapPinIcon, TimerIcon, Menu, X, UserCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getRestaurants } from './api/restaurants';
@@ -94,6 +96,8 @@ const BridgePlusApp = () => {
   const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isAddressInputFocused, setIsAddressInputFocused] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationPermissionAsked, setLocationPermissionAsked] = useState(false);
  
 
   //pour la localisation
@@ -152,61 +156,155 @@ const handleUseCurrentLocation = () => {
     setIsUsingCurrentLocation(true);
     setLoading(true);
     fetch(`/api/geocode?reverse=${userLocation.lat},${userLocation.lng}`)
-
       .then(res => res.json())
       .then(data => {
         if (data.features && data.features.length > 0) {
-          setQuery(data.features[0].place_name);
+          const address = data.features[0].place_name;
+          setQuery(address);
           setSuggestions([]);
+          
+          // Sauvegarder les données de localisation
+          saveLocationData(userLocation.lat, userLocation.lng, address);
         }
       })
       .catch(err => console.error('Erreur:', err))
       .finally(() => setLoading(false));
+  } else {
+    // Si pas de localisation, redemander la permission
+    requestLocationPermission();
   }
 }
 
- useEffect(() => {
+// Fonction pour demander la permission de géolocalisation
+const requestLocationPermission = () => {
   if (!navigator.geolocation) {
-    setLocationError('La géolocalisation n\'est pas supportée');
+    setLocationError('La géolocalisation n\'est pas supportée par votre navigateur');
     return;
   }
 
   const options = {
     enableHighAccuracy: true,
-    timeout: 15000, // Augmenté à 15 secondes
-    maximumAge: 30000 // Cache de 30 secondes
+    timeout: 15000,
+    maximumAge: 30000
   };
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      console.log('✅ Position:', position.coords);
+      console.log('✅ Position obtenue:', position.coords);
       setUserLocation({
         lat: position.coords.latitude,
         lng: position.coords.longitude
       });
       setLocationError('');
+      setShowLocationModal(false);
+      
+      // Convertir automatiquement les coordonnées en adresse
+      setIsUsingCurrentLocation(true);
+      setLoading(true);
+      fetch(`/api/geocode?reverse=${position.coords.latitude},${position.coords.longitude}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log('📍 Données de géocodage reçues:', data);
+          if (data.features && data.features.length > 0) {
+            const address = data.features[0].place_name;
+            console.log('🏠 Adresse trouvée:', address);
+            setQuery(address);
+            setSuggestions([]);
+            
+            // Sauvegarder les données de localisation
+            saveLocationData(position.coords.latitude, position.coords.longitude, address);
+          } else {
+            console.log('❌ Aucune adresse trouvée');
+          }
+        })
+        .catch(err => console.error('Erreur de géocodage:', err))
+        .finally(() => setLoading(false));
     },
     (error) => {
       console.error('❌ Erreur géolocalisation:', error);
       let errorMsg = '';
       switch(error.code) {
         case error.PERMISSION_DENIED:
-          errorMsg = 'Veuillez autoriser l\'accès à votre position dans les paramètres du navigateur';
+          errorMsg = 'Permission de géolocalisation refusée. Vous pouvez toujours saisir votre adresse manuellement.';
           break;
         case error.POSITION_UNAVAILABLE:
-          errorMsg = 'Position GPS indisponible. Vérifiez vos paramètres de localisation';
+          errorMsg = 'Position GPS indisponible. Vérifiez vos paramètres de localisation.';
           break;
         case error.TIMEOUT:
-          errorMsg = 'Délai d\'attente dépassé. Réessayez';
+          errorMsg = 'Délai d\'attente dépassé. Réessayez.';
           break;
         default:
           errorMsg = 'Erreur de géolocalisation';
       }
       setLocationError(errorMsg);
+      setShowLocationModal(false);
     },
     options
   );
-}, []);
+}
+
+// Fonction pour gérer l'acceptation de la géolocalisation
+const handleAcceptLocation = () => {
+  setShowLocationModal(false);
+  localStorage.setItem('hasAskedLocation', 'true');
+  requestLocationPermission();
+}
+
+// Fonction pour gérer le refus de la géolocalisation
+const handleDeclineLocation = () => {
+  setShowLocationModal(false);
+  setLocationPermissionAsked(true);
+  localStorage.setItem('hasAskedLocation', 'true');
+}
+
+// Fonction pour effacer les données de localisation et redemander
+const handleChangeLocation = () => {
+  localStorage.removeItem('userLocation');
+  localStorage.removeItem('userAddress');
+  localStorage.removeItem('hasLocationPermission');
+  localStorage.removeItem('hasAskedLocation');
+  
+  setUserLocation(null);
+  setQuery('');
+  setLocationPermissionAsked(false);
+  setShowLocationModal(true);
+}
+
+// Fonctions pour gérer le localStorage
+const saveLocationData = (lat: number, lng: number, address: string) => {
+  localStorage.setItem('userLocation', JSON.stringify({ lat, lng }));
+  localStorage.setItem('userAddress', address);
+  localStorage.setItem('hasLocationPermission', 'true');
+};
+
+const loadLocationData = () => {
+  const savedLocation = localStorage.getItem('userLocation');
+  const savedAddress = localStorage.getItem('userAddress');
+  
+  if (savedLocation && savedAddress) {
+    try {
+      const location = JSON.parse(savedLocation);
+      setUserLocation(location);
+      setQuery(savedAddress);
+      return true;
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de localisation:', error);
+    }
+  }
+  return false;
+};
+
+// Restaurer les données de localisation au chargement de la page
+useEffect(() => {
+  const hasLocationData = loadLocationData();
+  const hasAskedLocation = localStorage.getItem('hasAskedLocation');
+  
+  // Si on n'a pas de données de localisation et qu'on n'a pas encore demandé
+  if (!hasLocationData && !hasAskedLocation && !locationPermissionAsked) {
+    // Afficher le modal de demande de géolocalisation
+    setShowLocationModal(true);
+  }
+}, [locationPermissionAsked]);
 
   // Utiliser le nouveau système de panier
   const { items, summary, clearCart } = useCart();
@@ -604,14 +702,25 @@ const handleCreatePerson = async () => {
       {/* Champ adresse cliquable */}
       <div className="w-full sm:w-auto relative">
         <label className="text-sm font-medium block mb-1">Saisissez votre adresse de livraison</label>
-        <div 
-          className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-          onClick={() => setShowAddressModal(true)}
-        >
-          <MapPinIcon size={18} className="text-red-500 mr-2 flex-shrink-0" />
-          <span className="text-sm text-gray-700 flex-1 truncate">
-            {query || "Cliquez pour saisir votre adresse"}
-          </span>
+        <div className="flex items-center gap-2">
+          <div 
+            className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors flex-1"
+            onClick={() => setShowAddressModal(true)}
+          >
+            <MapPinIcon size={18} className="text-red-500 mr-2 flex-shrink-0" />
+            <span className="text-sm text-gray-700 flex-1 truncate">
+              {query || "Cliquez pour saisir votre adresse"}
+            </span>
+          </div>
+          {query && (
+            <button
+              onClick={handleChangeLocation}
+              className="text-xs text-gray-500 hover:text-red-600 px-2 py-1 rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition-colors"
+              title="Changer ma localisation"
+            >
+              Changer
+            </button>
+          )}
         </div>
       </div>
 
@@ -685,22 +794,21 @@ const handleCreatePerson = async () => {
             Aucun résultat trouvé
           </div>
         )}
-        {/*ça help au user de choisir sa position actuelle*/}
+        {/* Bouton discret pour utiliser la position actuelle */}
         {userLocation && (
-          <div 
-            onClick={() => {
-              handleUseCurrentLocation();
-              setShowAddressModal(false);
-            }}
-            className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b transition-colors"
-          >
-            <div className="bg-red-50 p-2 rounded-full">
-              <MapPinIcon size={20} className="text-red-500" />
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-gray-900">Utiliser ma position actuelle</div>
-              <div className="text-sm text-gray-500">Localisation GPS</div>
-            </div>
+          <div className="px-4 py-2 border-b">
+            <button
+              onClick={() => {
+                handleUseCurrentLocation();
+                setShowAddressModal(false);
+              }}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors group bg-transparent border-none outline-none focus:outline-none"
+            >
+              <div className="bg-gray-100 group-hover:bg-red-50 p-1.5 rounded-full transition-colors">
+                <MapPinIcon size={14} className="text-gray-500 group-hover:text-red-500" />
+              </div>
+              <span className="text-xs">Ma position actuelle</span>
+            </button>
           </div>
         )}
 
@@ -889,7 +997,7 @@ const handleCreatePerson = async () => {
           <div className="text-center">
             {searchTerm && filteredProducts.length === 0 ? (
               <div className="py-8">
-                <p className="text-gray-500 mb-4">Aucun produit trouvé pour "{searchTerm}"</p>
+                <p className="text-gray-500 mb-4">Aucun produit trouvé pour &quot;{searchTerm}&quot;</p>
                 <button 
                   onClick={() => {
                     setSearchTerm("");
@@ -916,7 +1024,7 @@ const handleCreatePerson = async () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center relative z-10">
               <div className="text-center lg:text-left">
                 <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-4xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-                  Profitez d'une remise de<br/>
+                  Profitez d&apos;une remise de<br/>
                   20% sur la livraison de votre<br/>
                   prochaine commande !
                 </h2>
@@ -995,6 +1103,49 @@ const handleCreatePerson = async () => {
 
       
 
+      {/* Modal de demande de géolocalisation - Version minimaliste */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-auto">
+            {/* Animation Lottie */}
+            <div className="w-32 h-32 mx-auto mt-6">
+              <Lottie 
+                animationData={areaMapAnimation} 
+                loop={true}
+                autoplay={true}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </div>
+            
+            {/* Contenu */}
+            <div className="px-6 pb-6 text-center">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                Localisation
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Autoriser l&apos;accès à votre position pour une meilleure expérience ?
+              </p>
+              
+              {/* Boutons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAcceptLocation}
+                  className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Autoriser
+                </button>
+                <button
+                  onClick={handleDeclineLocation}
+                  className="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  Plus tard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Modal show={showReductionModal} onClose={() => {
         setShowReductionModal(false);
         localStorage.setItem('hasSeenReductionModal', 'true');
@@ -1013,7 +1164,7 @@ const handleCreatePerson = async () => {
           <div className="w-full lg:w-1/2 p-6 sm:p-8 flex flex-col justify-center">
             <div className="max-w-md mx-auto lg:mx-0 w-full">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 leading-tight">
-                Profitez de 20% de réduction en rejoignant dès maintenant notre file d'attente !
+                Profitez de 20% de réduction en rejoignant dès maintenant notre file d&apos;attente !
               </h2>
               <div>
               <span className='text-sm text-red-500'>* Si vous étes déja inscrit, merci de fermer le formulaire !</span>
@@ -1072,7 +1223,7 @@ const handleCreatePerson = async () => {
                       className="w-4 h-4 text-red-500 border-2 border-gray-300 rounded focus:ring-red-500 mt-0.5"
                     />
                     <span className="text-sm text-gray-700 leading-relaxed">
-                      J'accepte de recevoir des communications de Mafalia et de bénéficier de mon code promo.
+                      J&apos;accepte de recevoir des communications de Mafalia et de bénéficier de mon code promo.
                     </span>
                   </label>
                 </div>
@@ -1082,7 +1233,7 @@ const handleCreatePerson = async () => {
                 disabled={loading}
                 className="w-full bg-black text-white py-4 rounded-full text-sm font-semibold hover:bg-gray-800 transition-colors mt-6 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {loading ? 'Inscription en cours...' : 'Rejoindre la file d\'attente'}
+                {loading ? 'Inscription en cours...' : 'Rejoindre la file d&apos;attente'}
               </button>
               </div>
               

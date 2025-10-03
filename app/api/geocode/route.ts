@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   let url: string
   if (reverse) {
     const [lat, lon] = reverse.split(',')
-    url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=5&country=${country}&language=fr&types=address,poi,neighborhood,locality`
+    url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=${country}&language=fr`
   } else if (query) {
     const prox = proximity ? `&proximity=${proximity}` : ''
     url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=6&country=${country}&language=fr${prox}&types=address,poi,neighborhood,locality`
