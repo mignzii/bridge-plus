@@ -29,12 +29,23 @@ export async function GET(
 
     const { restaurantId } = await params;
 
-    // Vérifier que le restaurant existe
-    const { data: restaurant, error: restaurantError } = await supabase
+    // Vérifier que le restaurant existe (par id Bridge+ ou mafalia_restaurant_id pour siège/centres autonomes)
+    let { data: restaurant, error: restaurantError } = await supabase
       .from('restaurants')
       .select('id, nom_restaurant, created_at')
       .eq('id', restaurantId)
-      .single();
+      .maybeSingle();
+
+    if (!restaurant && !restaurantError) {
+      // Fallback: lookup par mafalia_restaurant_id (UUID ou "uuid_centre_42" pour centres autonomes)
+      const { data: byMafalia, error: mafaliaErr } = await supabase
+        .from('restaurants')
+        .select('id, nom_restaurant, created_at')
+        .eq('mafalia_restaurant_id', restaurantId)
+        .maybeSingle();
+      restaurant = byMafalia;
+      restaurantError = mafaliaErr;
+    }
 
     if (restaurantError || !restaurant) {
       return createCorsResponse({
@@ -47,11 +58,12 @@ export async function GET(
       }, 404);
     }
 
-    // Compter le nombre total de produits
+    // Compter le nombre total de produits (utiliser l'ID Bridge+ interne du restaurant)
+    const bridgeRestaurantId = restaurant.id;
     const { count: totalProducts, error: productsError } = await supabase
       .from('produits')
       .select('*', { count: 'exact', head: true })
-      .eq('restaurant_id', restaurantId);
+      .eq('restaurant_id', bridgeRestaurantId);
 
     if (productsError) {
       console.error('Erreur lors du comptage des produits:', productsError);

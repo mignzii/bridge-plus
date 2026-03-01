@@ -99,14 +99,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<ProductsB
           product.categorie_id = category.id;
         }
 
-        // Vérifier si le produit existe déjà (par mafalia_product_id)
+        // Vérifier si le produit existe déjà (par mafalia_product_id ET restaurant_id)
+        // Important: le même produit Mafalia peut exister dans le siège ET dans un centre autonome → lignes distinctes
         const { data: existingProduct, error: existingError } = await supabase
           .from('produits')
           .select('id')
           .eq('mafalia_product_id', product.id)
-          .single();
+          .eq('restaurant_id', bridgeRestaurantId)
+          .maybeSingle();
 
-        if (existingProduct) {
+        if (existingProduct && !existingError) {
           // Mettre à jour le produit existant
           const { error: updateError } = await supabase
             .from('produits')

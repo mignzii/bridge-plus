@@ -52,12 +52,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<Restauran
       }, 400);
     }
 
-    // 1. Synchroniser le restaurant
+    // 1. Synchroniser le restaurant (restaurant.id = UUID Mafalia ou "uuid_centre_X" pour centres autonomes)
     const { data: existingRestaurant } = await supabase
       .from('restaurants')
       .select('id')
       .eq('mafalia_restaurant_id', restaurant.id)
-      .single();
+      .maybeSingle();
 
     let restaurantId: string;
 

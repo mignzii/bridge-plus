@@ -8,7 +8,7 @@
 // ============================================================================
 
 export interface Restaurant {
-  id: string;                    // ID Mafalia (requis)
+  id: string;                    // ID Mafalia (UUID) ou "uuid_centre_42" pour centre autonome (requis)
   nom_restaurant: string;        // Max 100 chars (requis)
   statut: 'ouvert' | 'ferme';    // Enum strict (requis)
   image?: string;                // URL valide, max 500 chars (optionnel)
@@ -45,7 +45,7 @@ export interface ProductsBatchRequest {
   batchId: string;               // ID unique du lot (requis)
   totalBatches: number;          // Nombre total de lots (requis)
   currentBatch: number;          // Numéro du lot actuel (requis)
-  restaurantId: string;          // ID Mafalia du restaurant (requis)
+  restaurantId: string;          // ID Mafalia du restaurant ou "uuid_centre_X" pour centre autonome (requis)
 }
 
 // ============================================================================
