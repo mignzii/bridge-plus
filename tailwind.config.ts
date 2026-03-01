@@ -20,6 +20,16 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       colors: {
+        /* Ajamaat Mobilité brand tokens */
+        ajamaat: {
+          green: '#16a34a',
+          'green-dark': '#15803d',
+          'green-light': '#f0fdf4',
+          'green-mid': '#dcfce7',
+          red: '#dc2626',
+          blue: '#3b82f6',
+          yellow: '#eab308',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

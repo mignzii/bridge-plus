@@ -87,13 +87,18 @@ const BridgePlusApp = () => {
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center ml-6">
-                <h1 className="text-2xl italic font-extrabold text-[#eb061d]">Bridge+</h1>
+              <div className="flex items-center gap-2 ml-6 cursor-pointer" onClick={() => router.push('/')}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/ajamaat-logo.jpeg" alt="Ajamaat Mobilité" className="h-9 w-9 rounded-full object-cover border-2 border-green-600" />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-extrabold text-green-700 tracking-wide">AJAMAAT</span>
+                  <span className="text-[10px] font-semibold text-green-600 tracking-widest -mt-0.5">MOBILITÉ</span>
+                </div>
               </div>
               <nav className="hidden md:flex space-x-8">
                 <button 
                   onClick={() => router.push('/commander')}
-                  className="text-gray-700 hover:text-red-600 font-medium"
+                  className="text-gray-700 hover:text-green-600 font-medium"
                 >
                   Commander
                 </button>
@@ -102,7 +107,7 @@ const BridgePlusApp = () => {
                 <div className="relative">
                   <ShoppingCart className="w-6 h-6 text-gray-600" />
                 </div>
-                <button className="text-gray-600 hover:text-red-600">
+                <button className="text-gray-600 hover:text-green-600">
                   <UserCircle2 className="w-6 h-6" />
                 </button>
               </div>
@@ -117,7 +122,7 @@ const BridgePlusApp = () => {
           <p className="text-gray-600 mb-8">Découvrez nos délicieux produits et ajoutez-les à votre panier</p>
           <button
             onClick={() => router.push('/commander')}
-            className="bg-[#eb061d] text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
+            className="bg-[#16a34a] text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             Commencer mes achats
           </button>
@@ -132,14 +137,19 @@ const BridgePlusApp = () => {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center ml-6">
-              <h1 className="text-2xl italic font-extrabold text-[#eb061d]">Bridge+</h1>
+            <div className="flex items-center gap-2 ml-6 cursor-pointer" onClick={() => router.push('/')}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ajamaat-logo.jpeg" alt="Ajamaat Mobilité" className="h-9 w-9 rounded-full object-cover border-2 border-green-600" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-extrabold text-green-700 tracking-wide">AJAMAAT</span>
+                <span className="text-[10px] font-semibold text-green-600 tracking-widest -mt-0.5">MOBILITÉ</span>
+              </div>
             </div>
             
             <nav className="hidden md:flex space-x-8">
               <button 
                 onClick={() => router.push('/commander')}
-                className="text-gray-700 hover:text-red-600 font-medium"
+                className="text-gray-700 hover:text-green-600 font-medium"
               >
                     Commander
                 </button>
@@ -151,21 +161,21 @@ const BridgePlusApp = () => {
                 <input
                 type="text"
                 placeholder="Rechercher un produit..."
-                className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
             </div>
             </div>
 
            <div className="flex items-center space-x-4">
               <div className="relative">
-                <ShoppingCart className="w-6 h-6 text-red-600" />
+                <ShoppingCart className="w-6 h-6 text-green-600" />
                 {items.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                    <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
                     {items.length}
                                 </span>
                 )}
               </div>
-              <button className="text-gray-600 hover:text-red-600">
+              <button className="text-gray-600 hover:text-green-600">
                 <UserCircle2 className="w-6 h-6" />
               </button>
             </div>
@@ -178,7 +188,7 @@ const BridgePlusApp = () => {
           <div className="flex items-center gap-4 mb-4">
             <button 
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-600 hover:text-red-600"
+              className="flex items-center gap-2 text-gray-600 hover:text-green-600"
             >
               <ChevronLeft className="w-5 h-5" />
               Retour
@@ -207,7 +217,7 @@ const BridgePlusApp = () => {
                   <div key={restaurantId} className="border border-gray-200 rounded-xl p-4">
                     {/* En-tête du restaurant */}
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                      <MapPin className="w-5 h-5 text-red-600" />
+                      <MapPin className="w-5 h-5 text-green-600" />
                       <h3 className="font-semibold text-gray-900">
                         {restaurantNames[restaurantId] || `Restaurant ${restaurantId.slice(0, 8)}...`}
                       </h3>
@@ -245,7 +255,7 @@ const BridgePlusApp = () => {
                             <span className="w-8 text-center font-medium">{item.quantite}</span>
                             <button 
                               onClick={() => incrementQuantity(item.id, item.quantite)}
-                              className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                              className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700 transition-colors"
                             >
                               <Plus className="w-4 h-4" />
           </button>
@@ -257,7 +267,7 @@ const BridgePlusApp = () => {
                             </p>
                             <button 
                               onClick={() => removeItem(item.id)}
-                              className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center gap-1"
+                              className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center gap-1 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                               Supprimer
@@ -295,7 +305,7 @@ const BridgePlusApp = () => {
             
             <div className="flex justify-between">
               <span>Rabais (-20%)</span>
-                <span className="font-medium text-red-600">-{summary.rabais} FCFA</span>
+                <span className="font-medium text-green-600">-{summary.rabais} FCFA</span>
             </div>
             
             <div className="border-t border-gray-200 pt-4">
@@ -306,11 +316,11 @@ const BridgePlusApp = () => {
               </div>
 
               {/* Message informatif - Thème Bridge+ */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
-                <p className="text-sm text-red-800">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+                <p className="text-sm text-green-800">
                   🚚 <strong>Les frais de livraison</strong> seront calculés à l'étape suivante selon votre choix :
                 </p>
-                <div className="mt-2 text-xs text-red-700 space-y-1">
+                <div className="mt-2 text-xs text-green-700 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                     <span><strong>Retrait gratuit</strong> en magasin</span>
@@ -331,7 +341,7 @@ const BridgePlusApp = () => {
                   placeholder="Code promo"
                   value={code_promo}
                   onChange={(e) => setCodePromo(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
                   <Tag className="w-4 h-4" />
@@ -353,7 +363,7 @@ const BridgePlusApp = () => {
             {/* Checkout Button */}
             <button 
               onClick={() => router.push('/paiement')}
-              className="w-full bg-gradient-to-br from-red-700 to-red-500 text-white py-4 rounded-xl font-semibold hover:from-red-800 hover:to-red-600 transition-all flex items-center justify-center"
+              className="w-full bg-gradient-to-br from-green-700 to-green-500 text-white py-4 rounded-xl font-semibold hover:from-green-800 hover:to-green-600 transition-all flex items-center justify-center"
             >
               <span>Procéder au paiement</span>
               <ArrowRight className="w-5 h-5 ml-2" />
@@ -362,7 +372,7 @@ const BridgePlusApp = () => {
             <div className="mt-4 text-center">
               <button 
                 onClick={() => router.push('/commander')}
-                className="text-red-600 hover:text-red-700 font-medium"
+                className="text-green-600 hover:text-green-700 font-medium"
               >
                 Continuer mes achats
               </button>
@@ -372,25 +382,32 @@ const BridgePlusApp = () => {
       </div>
 
   {/* Footer */}
-      <footer className="bg-red-50 py-6 sm:py-8 lg:py-16 mt-16">
+      <footer className="bg-green-50 py-6 sm:py-8 lg:py-16 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-6xl xl:text-8xl italic font-extrabold text-[#eb061d] mb-2 sm:mb-4">Bridge+</h2>
+            <div className="flex items-center justify-center gap-4 mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ajamaat-logo.jpeg" alt="Ajamaat Mobilité" className="h-14 w-14 rounded-full object-cover border-4 border-green-600 shadow-lg" />
+              <div className="text-left">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[#16a34a] leading-none">AJAMAAT</h2>
+                <p className="text-lg sm:text-xl font-extrabold text-[#16a34a] tracking-widest">MOBILITÉ</p>
+              </div>
+            </div>
             <p className="text-lg sm:text-xl font-semibold text-gray-800">Commande Rapide et Sécurisée</p>
           </div>
           
           <div className="flex flex-col lg:flex-row justify-between items-center mb-4 sm:mb-8 space-y-6 lg:space-y-0 mx-4 sm:mx-10">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-7 text-center sm:text-left">
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">À propos</a>
-              <a onClick={() => router.push("./commander")} className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Commander</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">Réservation</a>
-              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Mafalia</a>
+              <a href="#" className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium">À propos</a>
+              <a onClick={() => router.push("./commander")} className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium cursor-pointer">Commander</a>
+              <a href="#" className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium">Réservation</a>
+              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium cursor-pointer">Mafalia</a>
             </div>
           </div>
           
           <div className='border-b border-gray-200'></div>
           <div className="text-center">
-            <p className="text-gray-600 text-xs sm:text-sm mt-3">© Copyright BridgePlus, 2025</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-3">© Copyright Ajamaat Mobilité, 2025</p>
           </div>
         </div>
       </footer>

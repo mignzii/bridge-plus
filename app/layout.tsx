@@ -5,9 +5,9 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Bridge+',
-  description: 'Découvrez une expérience culinaire unique avec Bridge+. Des plats délicieux livrés rapidement et en toute sécurité directement chez vous.',
-  icons: ''
+  title: 'Ajamaat Mobilité',
+  description: 'Ajamaat Mobilité — Commandez vos repas en quelques clics. Livraison rapide et fiable directement chez vous.',
+  icons: '/ajamaat-logo.jpeg',
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body className={inter.className}>{children}</body>
     </html>
   );

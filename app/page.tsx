@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Lottie from 'lottie-react';
 import imagePer from '@/assets/imagePer.png'
+import imagePernew from '@/assets/imagePernew.png'
 import livreur from '@/assets/livreur.png'
 import pizza from '@/assets/pizza.png';
 import poulet from '@/assets/poulet.png';
@@ -47,7 +48,7 @@ type ModalProps = {
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto relative">
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 text-gray-500 hover:text-red-600 z-10"
+            className="absolute top-3 right-3 text-gray-500 hover:text-green-600 z-10"
           >
             <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
@@ -476,18 +477,22 @@ const handleCreatePerson = async () => {
       <header className="bg-white shadow-sm border-b">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-14 sm:h-16">
-                  {/* Logo */}
-                  <div onClick={()=>router.push("./")} className="flex items-center cursor-pointer">
-                    <span className="text-xl sm:text-2xl font-bold text-red-600">Bridge</span>
-                    <span className="text-xl sm:text-2xl font-bold text-red-600">+</span>
+                  {/* Logo Ajamaat Mobilité */}
+                  <div onClick={()=>router.push("./")} className="flex items-center gap-2 cursor-pointer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/ajamaat-logo.jpeg" alt="Ajamaat Mobilité" className="h-9 w-9 sm:h-11 sm:w-11 rounded-full object-cover border-2 border-green-600" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-sm sm:text-base font-extrabold text-green-700 tracking-wide">AJAMAAT</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-green-600 tracking-widest -mt-0.5">MOBILITÉ</span>
+                    </div>
                   </div>
       
                   {/* Desktop Navigation */}
                   <nav className="hidden md:flex space-x-8">
-                    <button onClick={()=>router.push("./commander")} className="text-gray-700 hover:text-red-600 font-medium">
+                    <button onClick={()=>router.push("./commander")} className="text-gray-700 hover:text-green-600 font-medium">
                       Commander
                     </button>
-                    <button className="text-gray-700 hover:text-red-600 font-medium">
+                    <button className="text-gray-700 hover:text-green-600 font-medium">
                       Réservation
                     </button>
                   </nav>
@@ -501,7 +506,7 @@ const handleCreatePerson = async () => {
                         placeholder="Rechercher un produit..."
                         value={searchTerm}
                         onChange={(e) => handleSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -510,10 +515,10 @@ const handleCreatePerson = async () => {
                   <div className="flex items-center space-x-2 sm:space-x-4">
                     {/* Cart Icon */}
                     <div className='relative' ref={panierRef}>
-                      <div onClick={()=>setShowPanier(!showPanier)} className="text-gray-600 hover:text-red-600 cursor-pointer">
+                      <div onClick={()=>setShowPanier(!showPanier)} className="text-gray-600 hover:text-green-600 cursor-pointer">
                         <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                         {items.length > 0 && (
-                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-medium text-[10px] sm:text-xs">
+                          <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-medium text-[10px] sm:text-xs">
                             {items.length}
                           </span>
                         )}
@@ -579,10 +584,10 @@ const handleCreatePerson = async () => {
                               
                               {/* Actions */}
                               <div className="flex gap-2 mt-4 pt-3 border-t">
-                                <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-red-700 to-red-500 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
+                                <button onClick={()=> router.push('./panier')} className="flex-1 bg-gradient-to-br from-green-700 to-green-500 text-white py-2 rounded-2xl hover:bg-green-600 transition-colors text-sm">
                                   voir mon panier
                                 </button>
-                                <button onClick={clearCartHandler} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-red-600 transition-colors text-sm">
+                                <button onClick={clearCartHandler} className="flex-1 bg-gradient-to-br from-gray-500 to-gray-400 text-white py-2 rounded-2xl hover:bg-gray-600 transition-colors text-sm">
                                   vider le panier
                                 </button>
                               </div>
@@ -594,7 +599,7 @@ const handleCreatePerson = async () => {
                     </div>
       
                     {/* User Icon */}
-                    <button className="text-gray-600 hover:text-red-600 hidden sm:block">
+                    <button className="text-gray-600 hover:text-green-600 hidden sm:block">
                       <UserCircle2 className="w-6 h-6" />
                     </button>
       
@@ -620,13 +625,13 @@ const handleCreatePerson = async () => {
                           placeholder="Rechercher un produit..."
                           value={searchTerm}
                           onChange={(e) => handleSearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                          className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                         />
                       </div>
                       {/* Mobile Navigation Links */}
                       <div className="flex flex-col space-y-2">
-                        <button onClick={()=>router.push("./commander")} className="text-left text-gray-700 hover:text-red-600 font-medium py-2 text-sm">Commander</button>
-                        <button className="text-left text-gray-700 hover:text-red-600 font-medium py-2 text-sm">Profile</button>
+                        <button onClick={()=>router.push("./commander")} className="text-left text-gray-700 hover:text-green-600 font-medium py-2 text-sm">Commander</button>
+                        <button className="text-left text-gray-700 hover:text-green-600 font-medium py-2 text-sm">Profile</button>
                       </div>
                     </div>
                   </div>
@@ -635,22 +640,22 @@ const handleCreatePerson = async () => {
             </header>
 
       {/* Hero Section */}
-      <section className="bg-red-50">
+      <section className="bg-green-50">
         <div className="max-w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 min-h-64">
             <div className='px-4 sm:px-8 py-6 sm:py-10 order-2 lg:order-1'>
               <div className="flex items-center mb-4">
-                <span className="bg-white text-xs font-medium px-3 py-2 sm:py-3 rounded-full">+100 RESTAURANTS</span>
+                <span className="bg-white text-xs font-medium px-3 py-2 sm:py-3 rounded-full border border-green-100">+100 RESTAURANTS</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl lg:text-6xl text-[#eb061d] font-bold mb-4 leading-tight">
+              <h1 className="text-2xl sm:text-4xl lg:text-6xl text-[#16a34a] font-bold mb-4 leading-tight">
                 Savourez, sans <br />
                 bouger de chez <br />
                 vous !
               </h1>
               <p className="text-gray-600 mb-6 max-w-md text-sm sm:text-base">
-                Découvrez une expérience culinaire unique avec Bridge+. Des plats délicieux livrés rapidement et en toute sécurité directement chez vous.
+                Découvrez une expérience culinaire unique avec Ajamaat Mobilité. Des plats délicieux livrés rapidement et en toute sécurité directement chez vous.
               </p>
-              <button onClick={()=>router.push("./commander")} className="bg-black text-white py-2 px-4 sm:px-6 rounded-3xl hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
+              <button onClick={()=>router.push("./commander")} className="bg-[#16a34a] text-white py-2 px-4 sm:px-6 rounded-3xl hover:bg-green-700 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
                 Commander maintenant
               </button>
             </div>
@@ -660,7 +665,7 @@ const handleCreatePerson = async () => {
               <div className="relative overflow-hidden h-64 sm:h-80 lg:h-full lg:min-h-96">
                 <div className="relative w-full h-full">
                   <Image 
-                    src={imagePer} 
+                    src={imagePernew} 
                     alt='Trois personnes partageant une pizza - Bridge+' 
                     width={1000} 
                     height={1000} 
@@ -707,7 +712,7 @@ const handleCreatePerson = async () => {
             className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors flex-1"
             onClick={() => setShowAddressModal(true)}
           >
-            <MapPinIcon size={18} className="text-red-500 mr-2 flex-shrink-0" />
+            <MapPinIcon size={18} className="text-green-600 mr-2 flex-shrink-0" />
             <span className="text-sm text-gray-700 flex-1 truncate">
               {query || "Cliquez pour saisir votre adresse"}
             </span>
@@ -715,7 +720,7 @@ const handleCreatePerson = async () => {
           {query && (
             <button
               onClick={handleChangeLocation}
-              className="text-xs text-gray-500 hover:text-red-600 px-2 py-1 rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition-colors"
+              className="text-xs text-gray-500 hover:text-green-600 px-2 py-1 rounded border border-gray-200 hover:bg-green-50 hover:border-green-200 transition-colors"
               title="Changer ma localisation"
             >
               Changer
@@ -728,7 +733,7 @@ const handleCreatePerson = async () => {
       <div className="w-full sm:w-auto">
         <label className="text-sm font-medium block mb-1">Livraison</label>
         <div className="flex items-center">
-          <TimerIcon size={18} className="text-red-500 mr-2 flex-shrink-0" />
+          <TimerIcon size={18} className="text-green-600 mr-2 flex-shrink-0" />
           <select className="border-b-2 border-gray-100 text-sm flex-1 sm:flex-none">
             <option value="">Immédiate</option>
             <option value="">En attente</option>
@@ -738,7 +743,7 @@ const handleCreatePerson = async () => {
 
       {/* Bouton recherche */}
       <div className="w-full sm:w-auto">
-        <button className="bg-[#eb061d] text-white px-6 sm:px-8 py-2 rounded-full hover:bg-red-500 transition-all duration-300 transform hover:scale-105 relative w-full sm:w-auto text-sm sm:text-base">
+        <button className="bg-[#16a34a] text-white px-6 sm:px-8 py-2 rounded-full hover:bg-green-700 transition-all duration-300 transform hover:scale-105 relative w-full sm:w-auto text-sm sm:text-base">
           <Search className="inline mr-2" size={16} />
           Rechercher
         </button>
@@ -769,7 +774,7 @@ const handleCreatePerson = async () => {
           <input
             type="text"
             placeholder="Fann résidence"
-            className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm"
+            className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-green-500 text-sm"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -802,10 +807,10 @@ const handleCreatePerson = async () => {
                 handleUseCurrentLocation();
                 setShowAddressModal(false);
               }}
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors group bg-transparent border-none outline-none focus:outline-none"
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-green-600 transition-colors group bg-transparent border-none outline-none focus:outline-none"
             >
-              <div className="bg-gray-100 group-hover:bg-red-50 p-1.5 rounded-full transition-colors">
-                <MapPinIcon size={14} className="text-gray-500 group-hover:text-red-500" />
+              <div className="bg-gray-100 group-hover:bg-green-50 p-1.5 rounded-full transition-colors">
+                <MapPinIcon size={14} className="text-gray-500 group-hover:text-green-600" />
               </div>
               <span className="text-xs">Ma position actuelle</span>
             </button>
@@ -820,7 +825,7 @@ const handleCreatePerson = async () => {
     className="cursor-pointer p-3 hover:bg-gray-100 border-b transition-colors"
   >
     <div className="flex items-start gap-3">
-      <MapPinIcon size={18} className="text-red-500 mt-1 flex-shrink-0" />
+          <MapPinIcon size={18} className="text-green-600 mt-1 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         {s.rue && (
           <div className="font-semibold text-gray-900 truncate">
@@ -893,7 +898,7 @@ const handleCreatePerson = async () => {
             {filteredProducts.slice(0, 4).map((product) => (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden transform hover:scale-105">
                 <div className="relative">
-                  <div className="h-40 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                  <div className="h-40 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
                     <img 
                       src={product.image} 
                       alt={product.nom_produit} 
@@ -904,7 +909,7 @@ const handleCreatePerson = async () => {
                     />
                   </div>
                   {getRestaurantStatut(product.restaurant_id) === "ouvert" && (
-                    <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-medium">
                       Ouvert
                     </div>
                   )}
@@ -946,7 +951,7 @@ const handleCreatePerson = async () => {
             {filteredProducts.slice(4, 8).map((product) => (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden transform hover:scale-105">
                 <div className="relative">
-                  <div className="h-40 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                  <div className="h-40 sm:h-48 w-full overflow-hidden bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
                     <img 
                       src={product.image} 
                       alt={product.nom_produit} 
@@ -1020,7 +1025,7 @@ const handleCreatePerson = async () => {
       {/* Promotion Section */}
       <section className="py-4 sm:py-8">
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#eb061d] rounded-2xl p-4 sm:p-8 relative overflow-hidden">
+          <div className="bg-[#16a34a] rounded-2xl p-4 sm:p-8 relative overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center relative z-10">
               <div className="text-center lg:text-left">
                 <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-4xl font-bold text-white mb-4 sm:mb-6 leading-tight">
@@ -1028,7 +1033,7 @@ const handleCreatePerson = async () => {
                   20% sur la livraison de votre<br/>
                   prochaine commande !
                 </h2>
-                <button onClick={()=>router.push("./commander")} className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 font-medium text-sm sm:text-base">
+                <button onClick={()=>router.push("./commander")} className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-900 transition-all duration-300 transform hover:scale-105 font-medium text-sm sm:text-base">
                   Commander maintenant
                 </button>
               </div>
@@ -1130,7 +1135,7 @@ const handleCreatePerson = async () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleAcceptLocation}
-                  className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                  className="flex-1 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                 >
                   Autoriser
                 </button>
@@ -1167,7 +1172,7 @@ const handleCreatePerson = async () => {
                 Profitez de 20% de réduction en rejoignant dès maintenant notre file d&apos;attente !
               </h2>
               <div>
-              <span className='text-sm text-red-500'>* Si vous étes déja inscrit, merci de fermer le formulaire !</span>
+              <span className='text-sm text-green-600'>* Si vous étes déja inscrit, merci de fermer le formulaire !</span>
               </div>
               
               <div className="space-y-4">
@@ -1181,7 +1186,7 @@ const handleCreatePerson = async () => {
                     value={formData.nom_complet}
                     onChange={handleInputChange}
                     placeholder="Miniane Diouf"
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                   />
                 </div>
 
@@ -1195,7 +1200,7 @@ const handleCreatePerson = async () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Loisbecket@gmail.com"
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                   />
                 </div>
                 
@@ -1209,7 +1214,7 @@ const handleCreatePerson = async () => {
                     value={formData.numeroPhone}
                     onChange={handleInputChange}
                     placeholder="+221 77 636 78 89"
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                   />
                 </div>
 
@@ -1220,7 +1225,7 @@ const handleCreatePerson = async () => {
                       name="isCondition"
                       checked={formData.isCondition}
                       onChange={handleInputChange}
-                      className="w-4 h-4 text-red-500 border-2 border-gray-300 rounded focus:ring-red-500 mt-0.5"
+                      className="w-4 h-4 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 mt-0.5"
                     />
                     <span className="text-sm text-gray-700 leading-relaxed">
                       J&apos;accepte de recevoir des communications de Mafalia et de bénéficier de mon code promo.
@@ -1253,10 +1258,17 @@ const handleCreatePerson = async () => {
       </Modal>
 
       {/* Footer */}
-      <footer className="bg-red-50 py-6 sm:py-8 lg:py-16">
+      <footer className="bg-green-50 py-6 sm:py-8 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-6xl xl:text-8xl italic font-extrabold text-[#eb061d] mb-2 sm:mb-4">Bridge+</h2>
+            <div className="flex items-center justify-center gap-4 mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ajamaat-logo.jpeg" alt="Ajamaat Mobilité" className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-4 border-green-600 shadow-lg" />
+              <div className="text-left">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#16a34a] leading-none">AJAMAAT</h2>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#16a34a] tracking-widest">MOBILITÉ</p>
+              </div>
+            </div>
             <p className="text-lg sm:text-xl font-semibold text-gray-800">Commande Rapide et Sécurisée</p>
           </div>
           
@@ -1264,37 +1276,37 @@ const handleCreatePerson = async () => {
           <div className="flex flex-col lg:flex-row justify-between items-center mb-4 sm:mb-8 space-y-6 lg:space-y-0 mx-4 sm:mx-10">
             {/* Navigation Links */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-7 text-center sm:text-left">
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium">À propos</a>
-              <a onClick={()=>router.push("./commander")} className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Commander</a>
-              <a href="#" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Réservation</a>
-              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#eb061d] transition-colors font-medium cursor-pointer">Mafalia</a>
+              <a href="#" className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium">À propos</a>
+              <a onClick={()=>router.push("./commander")} className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium cursor-pointer">Commander</a>
+              <a href="#" className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium cursor-pointer">Réservation</a>
+              <a href="https://www.mafalia.com/" className="text-gray-800 hover:text-[#16a34a] transition-colors font-medium cursor-pointer">Mafalia</a>
             </div>
             
             {/* Social Media Icons */}
             <div className="flex gap-4 space-x-2">
               <div className='rounded-full border border-gray-200 p-2'>
-                <a href="#" className="text-gray-600 hover:text-[#eb061d] transition-colors">
+                <a href="#" className="text-gray-600 hover:text-[#16a34a] transition-colors">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                   </svg>
                 </a>
               </div>
               <div className='rounded-full border border-gray-200 p-2'>
-                <a href="#" className="text-gray-600 hover:text-[#eb061d] transition-colors">
+                <a href="#" className="text-gray-600 hover:text-[#16a34a] transition-colors">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
                   </svg>
                 </a>
               </div>
               <div className='rounded-full border border-gray-200 p-2'>
-                <a href="#" className="text-gray-600 hover:text-[#eb061d] transition-colors">
+                <a href="#" className="text-gray-600 hover:text-[#16a34a] transition-colors">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.097.118.112.222.083.343-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.162-1.499-.698-2.436-2.888-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.357-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146 1.124.347 2.317.535 3.554.535 6.624 0 11.99-5.367 11.99-11.987C24.007 5.367 18.641.001 12.017.001z"/>
                   </svg>
                 </a>
               </div>
               <div className='rounded-full border border-gray-200 p-2'>
-                <a href="#" className="text-gray-600 hover:text-[#eb061d] transition-colors">
+                <a href="#" className="text-gray-600 hover:text-[#16a34a] transition-colors">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                   </svg>
@@ -1307,7 +1319,7 @@ const handleCreatePerson = async () => {
 
           {/* Copyright */}
           <div className="text-center">
-            <p className="text-gray-600 text-xs sm:text-sm mt-3">© Copyright BridgePlus, 2025</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-3">© Copyright Ajamaat Mobilité, 2025</p>
           </div>
         </div>
       </footer>

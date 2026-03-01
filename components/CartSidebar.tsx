@@ -101,7 +101,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                 {Object.entries(groupedItems).map(([restaurantId, restaurantItems]) => (
                   <div key={restaurantId} className="space-y-3">
                     <div className="flex items-center gap-2 border-b pb-2">
-                      <MapPin className="w-4 h-4 text-red-600" />
+                      <MapPin className="w-4 h-4 text-green-600" />
                       <h3 className="font-medium text-gray-900">
                         {restaurantNames[restaurantId] || `Restaurant ${restaurantId.slice(0, 8)}...`}
                       </h3>
@@ -171,8 +171,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     <span>Sous-total</span>
                     <span>{summary.total} FCFA</span>
                   </div>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
-                    <p className="text-xs text-red-700 flex items-center gap-1">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-2">
+                    <p className="text-xs text-green-700 flex items-center gap-1">
                       <span>🚚</span>
                       <span>Les frais de livraison seront calculés à l'étape suivante</span>
                     </p>
@@ -183,7 +183,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                 <div className="space-y-2">
                   <button
                     onClick={handleCheckout}
-                    className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                    className="w-full bg-[#16a34a] text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
                   >
                     Commander ({summary.total} FCFA)
                   </button>

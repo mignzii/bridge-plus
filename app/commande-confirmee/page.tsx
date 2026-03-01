@@ -123,7 +123,7 @@ const CommandeConfirmeeContent = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement de votre commande...</p>
         </div>
       </div>
@@ -139,7 +139,7 @@ const CommandeConfirmeeContent = () => {
           <p className="text-gray-600 mb-6">{error || 'Commande introuvable'}</p>
           <button
             onClick={() => router.push('/commander')}
-            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+            className="bg-[#16a34a] text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
           >
             Retour à la commande
           </button>
@@ -320,7 +320,7 @@ const CommandeConfirmeeContent = () => {
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => router.push('/commander')}
-            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-colors"
+            className="bg-[#16a34a] text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors"
           >
             Commander à nouveau
           </button>
@@ -341,7 +341,7 @@ const CommandeConfirmeePage = () => {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
